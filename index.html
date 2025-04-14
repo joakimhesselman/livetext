@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samhall livetext</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* Samhall Grafisk Profil (Baserat på Figma-länk) - Behåller grundstruktur */
+        :root {
+            /* Behåller Samhall-färger för andra element, men definierar ny knappfärg */
+            --user-button-blue: #174470;
+            --user-button-blue-hover: #113659; /* Mörkare variant för hover */
+
+            --samhall-green: #008330;
+            --samhall-blue: #004A80;
+            --samhall-orange: #F37A24;
+            --samhall-dark-grey: #333333;
+            --samhall-medium-grey: #CCCCCC;
+            --samhall-light-grey: #F5F5F5;
+            --samhall-white: #FFFFFF;
+            --samhall-font: 'Source Sans 3', sans-serif;
+            --samhall-border-radius: 4px;
+        }
+
+        /* Grundläggande stil (oförändrad) */
+        body {
+            background-color: var(--samhall-white);
+            color: var(--samhall-dark-grey);
+            font-family: var(--samhall-font);
+            margin: 0; padding: 0; display: flex; flex-direction: column;
+            justify-content: flex-end; align-items: center; min-height: 100vh;
+            overflow-y: auto; transition: background-color 0.3s ease;
+        }
+
+        /* Undertextbehållare (oförändrad) */
+        #subtitles-container {
+            background-color: var(--samhall-dark-grey); color: var(--samhall-white);
+            padding: 1.5rem 2.5rem; border-radius: var(--samhall-border-radius);
+            text-align: center; width: 85%; max-width: 1200px; margin-bottom: 2vh;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); min-height: 10vh;
+            display: flex; justify-content: center; align-items: center;
+            flex-grow: 1; margin-top: 2vh; transition: all 0.3s ease;
+        }
+        #transcript {
+            font-size: 3.5vw; line-height: 1.4; font-weight: 400;
+            text-shadow: none; margin: 0; max-height: 60vh; overflow-y: auto;
+            width: 100%; transition: max-height 0.3s ease;
+        }
+
+        /* Wrapper för kontroller och ordlista (oförändrad) */
+         #controls-wrapper {
+            width: 90%; max-width: 800px; margin-bottom: 3vh; display: flex;
+            flex-direction: column; align-items: center; gap: 20px;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+         }
+         #controls {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
+            align-items: center; width: 100%; position: relative;
+        }
+         #custom-words-container { /* ... (oförändrad) ... */
+            width: 100%; display: flex; flex-direction: column;
+            align-items: center; gap: 5px;
+         }
+         #customWords { /* ... (oförändrad) ... */
+            width: 100%; padding: 10px; font-size: 0.9rem;
+            border-radius: var(--samhall-border-radius);
+            border: 1px solid var(--samhall-medium-grey);
+            background-color: var(--samhall-white);
+            color: var(--samhall-dark-grey);
+            min-height: 60px; resize: vertical;
+            font-family: var(--samhall-font);
+         }
+         #custom-words-container label { /* ... (oförändrad) ... */
+             font-size: 0.9rem; color: var(--samhall-dark-grey); font-weight: 500;
+         }
+
+        /* Status (oförändrad) */
+        #status {
+            order: 99; width: 100%; text-align: center; margin-top: 10px;
+            background-color: var(--samhall-light-grey); color: var(--samhall-dark-grey);
+            padding: 3px 8px; border-radius: var(--samhall-border-radius);
+            font-size: 0.75rem; white-space: nowrap;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        /* --- Fullskärmsläge när aktiv (oförändrad) --- */
+        body.fullscreen-active { /* ... */
+            justify-content: flex-start; background-color: var(--samhall-dark-grey);
+        }
+        body.fullscreen-active #subtitles-container { /* ... */
+            width: 98%; height: calc(100vh - 80px); max-width: none; margin-top: 1vh;
+            margin-bottom: 70px; border-radius: var(--samhall-border-radius); box-shadow: none;
+            background-color: var(--samhall-dark-grey); color: var(--samhall-white);
+        }
+         body.fullscreen-active #transcript { /* ... */
+             font-size: 4vw; max-height: 100%;
+         }
+        body.fullscreen-active #controls-wrapper { /* ... */
+             opacity: 0; visibility: hidden; height: 0;
+             overflow: hidden; margin-bottom: 0; gap: 0;
+        }
+
+        /* Kontroller i fullskärmsläge (bakgrundsfärg ändrad) */
+        #active-controls {
+            position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+            display: none; gap: 20px; padding: 8px 15px;
+            background-color: rgba(245, 245, 245, 0.9); /* Ljusare grå bakgrund för bättre kontrast mot blå knappar? */
+            border-radius: var(--samhall-border-radius);
+            z-index: 100; transition: opacity 0.3s ease;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+         body.fullscreen-active #active-controls { display: flex; }
+         body.fullscreen-active #startButton,
+         body.fullscreen-active #pauseButton { margin: 0; }
+
+         /* Dölj element i fullskärm (oförändrad) */
+         body.fullscreen-active #saveSrtButton,
+         body.fullscreen-active #languageSelect,
+         body.fullscreen-active #status { display: none !important; }
+
+        /* Anpassning för mindre skärmar (oförändrad) */
+        @media (max-width: 768px) { /* ... */
+            #transcript { font-size: 5vw; }
+            body.fullscreen-active #transcript { font-size: 6vw; }
+            #subtitles-container { width: 95%; padding: 1rem 1.5rem; margin-bottom: 1vh; }
+            #controls-wrapper { margin-bottom: 2vh; gap: 15px;}
+            #controls { gap: 10px; }
+            .control-button, #languageSelect, #customWords { padding: 8px 10px !important; font-size: 0.85rem !important; }
+            #status { font-size: 0.7rem; }
+            #customWords { min-height: 50px; }
+            #active-controls { gap: 15px; }
+        }
+
+         /* Knappstil (grundläggande oförändrad, färger ändras nedan) */
+        .control-button {
+            padding: 10px 20px; font-size: 1rem; color: var(--samhall-white); /* Vit text som standard */
+            border: none; border-radius: var(--samhall-border-radius);
+            cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+            font-family: var(--samhall-font); font-weight: 500;
+        }
+        .control-button:disabled {
+            opacity: 0.6; cursor: not-allowed; box-shadow: none;
+            background-color: var(--samhall-medium-grey) !important; /* Tydlig grå när inaktiv */
+            color: var(--samhall-dark-grey) !important; /* Mörk text på grå */
+        }
+        .control-button:hover:not(:disabled) {
+             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Språkvals-stil (oförändrad) */
+        #languageSelect { /* ... */
+            padding: 9px 15px; font-size: 1rem; border-radius: var(--samhall-border-radius);
+            border: 1px solid var(--samhall-medium-grey); background-color: var(--samhall-white);
+            color: var(--samhall-dark-grey); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            font-family: var(--samhall-font); appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23333333'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.7rem center;
+            background-size: 1.2em 1.2em; padding-right: 2.5rem;
+        }
+        #languageSelect:hover { border-color: var(--samhall-dark-grey); }
+        #languageSelect:disabled { /* ... */
+             opacity: 0.6; cursor: not-allowed; background-color: var(--samhall-light-grey);
+             box-shadow: none;
+         }
+
+        /* --- NYA KNAPPFÄRGER --- */
+        #startButton, #pauseButton, #saveSrtButton {
+             background-color: var(--user-button-blue); /* Använd den nya blå färgen */
+        }
+        #startButton:hover:not(:disabled),
+        #pauseButton:hover:not(:disabled),
+        #saveSrtButton:hover:not(:disabled) {
+             background-color: var(--user-button-blue-hover); /* Mörkare blå vid hover */
+        }
+
+        /* Behåll klasser för logik, men färgen styrs nu av huvudregeln */
+        #startButton.active {
+            /* Ingen specifik färg för .active, använder samma blå */
+             background-color: var(--user-button-blue);
+        }
+         #startButton.active:hover:not(:disabled) {
+            background-color: var(--user-button-blue-hover);
+         }
+        #pauseButton.paused {
+            /* Ingen specifik färg för .paused, använder samma blå */
+             background-color: var(--user-button-blue);
+        }
+         #pauseButton.paused:hover:not(:disabled) {
+            background-color: var(--user-button-blue-hover);
+         }
+
+
+        /* Anpassa knappar i den aktiva kontrollbaren (använder samma blå) */
+        #active-controls .control-button {
+            background-color: var(--user-button-blue);
+            color: var(--samhall-white); /* Vit text på blå knapp */
+            box-shadow: none;
+        }
+        #active-controls .control-button:hover:not(:disabled) {
+            background-color: var(--user-button-blue-hover);
+        }
+
+
+    </style>
+    </head>
+<body>
+    <div id="subtitles-container">
+        <p id="transcript">Väntar på tal...</p>
+    </div>
+
+    <div id="controls-wrapper">
+        <div id="controls">
+            <label for="languageSelect" class="sr-only">Välj språk:</label>
+            <select id="languageSelect" title="Välj igenkänningsspråk">
+                <option value="sv-SE">Svenska</option>
+                <option value="en-US">Engelska (US)</option>
+                <option value="en-GB">Engelska (UK)</option>
+                <option value="de-DE">Tyska</option>
+                <option value="fr-FR">Franska</option>
+                <option value="es-ES">Spanska</option>
+                <option value="it-IT">Italienska</option>
+                <option value="ja-JP">Japanska</option>
+                <option value="ko-KR">Koreanska</option>
+                <option value="zh-CN">Kinesiska (Mandarin)</option>
+            </select>
+            <button id="startButton" class="control-button">Starta</button>
+            <button id="pauseButton" class="control-button" disabled>Pausa</button>
+            <button id="saveSrtButton" class="control-button" disabled>Spara SRT</button>
+            <div id="status">Status: Inaktiv</div>
+        </div>
+        <div id="custom-words-container">
+            <label for="customWords">Förbättra igenkänning (ett ord/namn per rad):</label>
+            <textarea id="customWords" rows="4" placeholder="T.ex. Kista Mässan, specifika namn, facktermer..."></textarea>
+        </div>
+    </div>
+
+    <div id="active-controls">
+        </div>
+
+
+    <script>
+        // Hämta HTML-element (oförändrad)
+        const transcriptElement = document.getElementById('transcript');
+        const statusElement = document.getElementById('status');
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const saveSrtButton = document.getElementById('saveSrtButton');
+        const languageSelect = document.getElementById('languageSelect');
+        const customWordsTextarea = document.getElementById('customWords');
+        const controlsWrapper = document.getElementById('controls-wrapper');
+        const activeControlsContainer = document.getElementById('active-controls');
+
+        // Kontrollera om Web Speech API stöds (oförändrad)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecognizing = false;
+        let isPaused = false;
+        let startTime = 0;
+        let srtSegments = [];
+        let accumulatedFinalTranscript = '';
+
+        // --- Hjälpfunktioner (oförändrade) ---
+        function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+        function applyCustomWords(text) {
+            const customWordsRaw = customWordsTextarea.value.trim();
+            if (!customWordsRaw) { return text; }
+            const customWords = customWordsRaw.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+            if (customWords.length === 0) { return text; }
+            let processedText = text;
+            customWords.forEach(word => {
+                try {
+                    const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
+                    processedText = processedText.replace(regex, match => word);
+                } catch (e) { console.warn(`Kunde inte skapa regex för ordet: "${word}"`, e); }
+            });
+            return processedText;
+         }
+        function formatTimeSRT(milliseconds) {
+            if (milliseconds < 0) milliseconds = 0;
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const ms = String(milliseconds % 1000).padStart(3, '0');
+            const seconds = String(totalSeconds % 60).padStart(2, '0');
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            const minutes = String(totalMinutes % 60).padStart(2, '0');
+            const hours = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds},${ms}`;
+        }
+        function generateSrtContent(segments) {
+             let srt = '';
+            segments.forEach((segment, index) => {
+                const startTimeFormatted = formatTimeSRT(segment.startTimeMs);
+                const endTimeFormatted = formatTimeSRT(segment.endTimeMs);
+                const validEndTimeFormatted = segment.endTimeMs >= segment.startTimeMs ? endTimeFormatted : startTimeFormatted;
+                srt += `${index + 1}\n${startTimeFormatted} --> ${validEndTimeFormatted}\n${segment.text}\n\n`;
+            });
+            return srt;
+         }
+        function downloadFile(content, fileName, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = fileName;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+         }
+         function moveControls(toActive) {
+            if (toActive) {
+                activeControlsContainer.appendChild(startButton);
+                activeControlsContainer.appendChild(pauseButton);
+            } else {
+                const referenceNode = saveSrtButton;
+                 if (controlsWrapper.querySelector('#controls')) {
+                    controlsWrapper.querySelector('#controls').insertBefore(pauseButton, referenceNode);
+                    controlsWrapper.querySelector('#controls').insertBefore(startButton, pauseButton);
+                 }
+            }
+        }
+
+        // --- Speech Recognition Logik (oförändrad) ---
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = languageSelect.value;
+
+            statusElement.textContent = 'Status: Redo';
+
+            recognition.onstart = () => {
+                if (!isPaused) { startTime = Date.now(); }
+                isRecognizing = true; isPaused = false;
+                startButton.textContent = 'Stoppa'; startButton.classList.add('active'); // Klassen behövs fortfarande för logik
+                pauseButton.textContent = 'Pausa'; pauseButton.classList.remove('paused'); // Klassen behövs fortfarande för logik
+                pauseButton.disabled = false;
+                document.body.classList.add('fullscreen-active');
+                moveControls(true);
+                console.log(`Taligenkänning startad/återupptagen med språk: ${recognition.lang}`);
+            };
+
+            recognition.onresult = (event) => {
+                 let interimTranscript = '';
+                let currentFinalTranscriptSegment = '';
+                let segmentEndTime = Date.now();
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcriptPart = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) { currentFinalTranscriptSegment += transcriptPart.trim() + '. '; }
+                    else { interimTranscript += transcriptPart; }
+                }
+                if (currentFinalTranscriptSegment) {
+                    const correctedSegment = applyCustomWords(currentFinalTranscriptSegment);
+                    accumulatedFinalTranscript += correctedSegment;
+                    const segmentStartTime = srtSegments.length > 0 ? srtSegments[srtSegments.length - 1].endTimeMs : 0;
+                    const elapsedTimeMs = segmentEndTime - startTime;
+                    srtSegments.push({ text: correctedSegment.trim(), startTimeMs: segmentStartTime, endTimeMs: elapsedTimeMs });
+                }
+                transcriptElement.textContent = accumulatedFinalTranscript + interimTranscript;
+                 if (transcriptElement.scrollHeight > transcriptElement.clientHeight) {
+                    transcriptElement.scrollTop = transcriptElement.scrollHeight;
+                }
+             };
+
+            recognition.onend = () => {
+                console.log('Taligenkänning avslutad (onend). isRecognizing:', isRecognizing, 'isPaused:', isPaused);
+                const wasRunning = isRecognizing && !isPaused;
+                if (wasRunning) {
+                    try {
+                        recognition.lang = languageSelect.value; recognition.start();
+                        console.log(`Taligenkänning startades om automatiskt med språk: ${recognition.lang}`);
+                    } catch(e) { console.error("Kunde inte starta om automatiskt:", e); resetToInactiveState(); }
+                } else if (!isRecognizing && !isPaused) { resetToInactiveState(); }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Taligenkänningsfel:', event.error, 'Språk:', recognition.lang);
+                let alertMsg = null; const currentLang = languageSelect.options[languageSelect.selectedIndex].text;
+                 if (event.error === 'no-speech') { if (isRecognizing && !isPaused) { try { recognition.start(); console.log('Försöker starta om efter "no-speech".'); return; } catch(e) { console.error("Kunde inte starta om efter no-speech:", e); } } }
+                 else if (event.error === 'audio-capture') { alertMsg = "Kunde inte komma åt mikrofonen. Kontrollera att du gett tillåtelse och att mikrofonen fungerar."; }
+                 else if (event.error === 'not-allowed') { alertMsg = "Du behöver ge tillåtelse till mikrofonen för att textning ska fungera."; }
+                 else if (event.error === 'language-not-supported') { alertMsg = `Det valda språket (${currentLang} / ${recognition.lang}) stöds inte av din webbläsares taligenkänning.`; }
+                 else if (event.error === 'service-not-allowed') { alertMsg = "Webbläsaren blockerade taligenkänningstjänsten. Detta kan bero på nätverksinställningar eller tillägg."; }
+                 else { alertMsg = `Ett okänt fel inträffade med taligenkänningen (${currentLang}): ${event.error}`; }
+                resetToInactiveState(); if (alertMsg) { alert(alertMsg); }
+            };
+
+            // --- Knapplogik (oförändrad i funktion) ---
+            startButton.onclick = () => {
+                if (isRecognizing) { isRecognizing = false; isPaused = false; recognition.stop(); console.log('Försöker stoppa igenkänning (manuell stopp)...'); }
+                else { try { accumulatedFinalTranscript = ''; srtSegments = []; transcriptElement.textContent = "Startar textning..."; recognition.lang = languageSelect.value; recognition.start(); }
+                    catch (e) { console.error("Kunde inte starta igenkänning:", e); alert("Kunde inte starta taligenkänningen. Försök igen."); resetToInactiveState(); } }
+            };
+            pauseButton.onclick = () => {
+                if (!isRecognizing) return;
+                if (isPaused) { try { recognition.lang = languageSelect.value; recognition.start(); console.log(`Försöker återuppta igenkänning med språk: ${recognition.lang}`); }
+                    catch (e) { console.error("Kunde inte återuppta igenkänning:", e); alert("Kunde inte återuppta taligenkänningen."); resetToInactiveState(); } }
+                else { isPaused = true; recognition.stop(); pauseButton.textContent = 'Återuppta'; pauseButton.classList.add('paused'); console.log('Försöker pausa igenkänning...'); }
+            };
+             saveSrtButton.onclick = () => {
+                if (srtSegments.length === 0) { alert("Det finns ingen transkription att spara."); return; }
+                const srtContent = generateSrtContent(srtSegments); const langCode = languageSelect.value.split('-')[0];
+                downloadFile(srtContent, `transkription_${langCode}.srt`, 'application/x-subrip'); console.log('SRT-fil genererad och nedladdning startad.');
+            };
+            languageSelect.onchange = () => {
+                const newLang = languageSelect.value; console.log(`Språk ändrat till: ${newLang}`); recognition.lang = newLang;
+                if (isRecognizing && !isPaused) { console.log('Startar om igenkänning på grund av språkbyte...'); recognition.stop(); }
+            };
+
+        } else { /* ... (API stöds ej - oförändrad) ... */
+            transcriptElement.textContent = 'Din webbläsare stöder inte taligenkänning.';
+            statusElement.textContent = 'Fel: API stöds ej';
+            startButton.disabled = true; pauseButton.disabled = true; saveSrtButton.disabled = true;
+            languageSelect.disabled = true; customWordsTextarea.disabled = true;
+            alert('Web Speech API stöds inte av den här webbläsaren. Prova Google Chrome.');
+        }
+
+        // --- Återställningsfunktion (oförändrad) ---
+        function resetToInactiveState() {
+            isRecognizing = false; isPaused = false;
+            document.body.classList.remove('fullscreen-active');
+            moveControls(false); // Flytta tillbaka knappar
+            statusElement.textContent = 'Status: Inaktiv';
+            startButton.textContent = 'Starta'; startButton.classList.remove('active');
+            pauseButton.textContent = 'Pausa'; pauseButton.classList.remove('paused'); pauseButton.disabled = true;
+            saveSrtButton.disabled = srtSegments.length === 0;
+            languageSelect.disabled = false;
+            customWordsTextarea.disabled = false;
+            console.log('Återställd till inaktivt läge.');
+        }
+
+    </script>
+</body>
+</html>
