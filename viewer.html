@@ -51,7 +51,7 @@
         const db = firebase.database();
 
         // Skapa en referens till samma plats som din transkriberingsapp skriver till
-        const liveTranscriptRef = db.ref('live_transcript'); // Måste matcha sökvägen i steg 7!
+        const liveTranscriptRef = db.ref('livetext-irl'); // Måste matcha sökvägen i steg 7!
 
         // Lyssna på ändringar på denna plats i databasen
         // 'value' eventet triggas varje gång data ändras på 'live_transcript' eller någon av dess underliggande noder
