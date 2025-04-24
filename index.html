@@ -336,6 +336,29 @@
         const fsTextColorInput = document.getElementById('fsTextColor');
         const fsTextSizeInput = document.getElementById('fsTextSize');
 
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDBzGbQ0mlAREtirA5nhV0jgej_50eR1R4",
+  authDomain: "livetext-irl.firebaseapp.com",
+  databaseURL: "https://livetext-irl-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "livetext-irl",
+  storageBucket: "livetext-irl.firebasestorage.app",
+  messagingSenderId: "1011889413450",
+  appId: "1:1011889413450:web:704a87ec54d5bc9baeb5b3",
+  measurementId: "G-K2G1NEVL8C"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+        
         // Kontrollera om Web Speech API stöds
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
@@ -435,6 +458,21 @@
                 if (currentFinalTranscriptSegment) {
                     const correctedSegment = applyCustomWords(currentFinalTranscriptSegment);
                     accumulatedFinalTranscript += correctedSegment;
+                      // --- NY KOD HÄR: Skicka den ackumulerade texten till Firebase ---
+                    // Skapa en referens till där du vill lagra texten, t.ex. '/live_transcript'
+                    const liveTranscriptRef = db.ref('livetext-irl'); // Välj ett unikt namn!
+
+                    // Skriv den ackumulerade texten till denna plats.
+                    // .set() skriver över tidigare data på denna plats.
+                    liveTranscriptRef.set(accumulatedFinalTranscript)
+                        .then(() => {
+                            console.log("Transkription skickad till Firebase.");
+                        })
+                        .catch((error) => {
+                            console.error("Fel vid sändning till Firebase:", error);
+                        });
+                    // --- SLUT NY KOD ---
+
                     const segmentStartTime = srtSegments.length > 0 ? srtSegments[srtSegments.length - 1].endTimeMs : 0;
                     const elapsedTimeMs = segmentEndTime - startTime;
                     srtSegments.push({ text: correctedSegment.trim(), startTimeMs: segmentStartTime, endTimeMs: elapsedTimeMs });
