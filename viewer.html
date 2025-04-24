@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livetext IRL</title>
+    <style>
+        body {
+            font-family: 'Source Sans 3', sans-serif; /* Använd samma typsnitt som din app */
+            background-color: #1a1a1a; /* Matchar din app */
+            color: #e0e0e0; /* Matchar din app */
+            padding: 20px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* Behåll eventuella radbrytningar från databasen */
+        }
+        #shared-transcript {
+            font-size: 2.5vw; /* Anpassa storlek efter önskemål */
+            word-wrap: break-word; /* Bryt långa ord om nödvändigt */
+        }
+    </style>
+
+    <script>  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";</script>
+    <script>   import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";    </script>
+    </head>
+<body>
+
+    <h1>Livetext IRL</h1>
+    <p id="shared-transcript">Väntar på text...</p>
+
+    <script>
+  
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDBzGbQ0mlAREtirA5nhV0jgej_50eR1R4",
+    authDomain: "livetext-irl.firebaseapp.com",
+    databaseURL: "https://livetext-irl-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "livetext-irl",
+    storageBucket: "livetext-irl.firebasestorage.app",
+    messagingSenderId: "1011889413450",
+    appId: "1:1011889413450:web:704a87ec54d5bc9baeb5b3",
+    measurementId: "G-K2G1NEVL8C"
+  };
+
+
+        // Initiera Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Hämta en referens till Realtime Database-tjänsten
+        const db = firebase.database();
+
+        // Skapa en referens till samma plats som din transkriberingsapp skriver till
+        const liveTranscriptRef = db.ref('live_transcript'); // Måste matcha sökvägen i steg 7!
+
+        // Lyssna på ändringar på denna plats i databasen
+        // 'value' eventet triggas varje gång data ändras på 'live_transcript' eller någon av dess underliggande noder
+        liveTranscriptRef.on('value', (snapshot) => {
+            // snapshot.val() innehåller datan på den refererade platsen
+            const text = snapshot.val();
+
+            const transcriptElement = document.getElementById('shared-transcript');
+
+            if (text !== null) {
+                // Uppdatera HTML-elementet med den nya texten
+                transcriptElement.textContent = text;
+                console.log("Mottog ny transkription:", text);
+
+                // Valfritt: Scrolla ner om elementet blir fullt
+                if (transcriptElement.scrollHeight > transcriptElement.clientHeight) {
+                    transcriptElement.scrollTop = transcriptElement.scrollHeight;
+                }
+
+            } else {
+                // Datan har raderats på den platsen
+                transcriptElement.textContent = "Textströmmen är tom.";
+                console.log("Transkriptionen raderades.");
+            }
+        }, (errorObject) => {
+            // Hantera eventuella fel vid läsning (t.ex. p.g.a. säkerhetsregler)
+            console.error('Fel vid läsning från Firebase:', errorObject.name, errorObject.message);
+            document.getElementById('shared-transcript').textContent = "Fel vid inläsning av transkription.";
+        });
+
+        // Optional: Lägg till en lyssnare för 'child_added' eller 'child_changed' om du t.ex. lagrar segment i en lista
+        // Men för att bara visa den löpande texten räcker oftast 'value' på rotnoden du skriver till.
+
+    </script>
+
+</body>
+</html>
