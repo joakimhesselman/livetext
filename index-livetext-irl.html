@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Samhall livetext (Neo-Brutalist Dark)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0;700&display=swap" rel="stylesheet">
-    <style>
+   
         /* Neobrutalist Dark Mode Theme */
         :root {
             --bg-color: #1a1a1a; /* Mörk bakgrund */
@@ -279,6 +280,8 @@
         }
 
     </style>
+    <script src="https://www.gstatic.com/firebasejs/x.x.x/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/x.x.x/firebase-app-compat.js"></script>
     </head>
 <body>
     <div id="subtitles-container">
@@ -295,10 +298,7 @@
                 <option value="de-DE">Tyska</option>
                 <option value="fr-FR">Franska</option>
                 <option value="es-ES">Spanska</option>
-                <option value="it-IT">Italienska</option>
-                <option value="ja-JP">Japanska</option>
-                <option value="ko-KR">Koreanska</option>
-                <option value="zh-CN">Kinesiska (Mandarin)</option>
+                <option value="it-IT">Italienska</option>   
             </select>
             <button id="startButton" class="control-button">Starta</button>
             <button id="pauseButton" class="control-button" disabled>Pausa</button>
@@ -306,17 +306,17 @@
             <div id="status">Status: Redo</div> </div>
         <div id="custom-words-container">
             <label for="customWords">Förbättra igenkänning (ett ord/namn per rad):</label>
-            <textarea id="customWords" rows="4" placeholder="T.ex. Kista Mässan, specifika namn, facktermer..."></textarea>
+            <textarea id="customWords" rows="4" placeholder="T.ex. Samhall, specifika namn, facktermer..."></textarea>
         </div>
     </div>
 
     <div id="active-controls">
         <div class="fs-control-group">
-            <label for="fsTextColor">Färg:</label>
+            <label for="fsTextColor">Textfärg:</label>
             <input type="color" id="fsTextColor" value="#e0e0e0" title="Ändra textfärg">
         </div>
         <div class="fs-control-group">
-            <label for="fsTextSize">Storlek:</label>
+            <label for="fsTextSize">Textstorlek:</label>
             <input type="range" id="fsTextSize" min="2" max="8" value="4" step="0.2" title="Ändra textstorlek">
         </div>
          </div>
