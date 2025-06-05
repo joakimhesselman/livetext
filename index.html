@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="This live text app is designed to provide real-time captions by capturing audio from your microphone and transcribing it using the browser’s built-in Web Speech API (SpeechRecognition). Necessary for some but usable for all."/>
+    <meta name="description" content="This live text app is designed to provide real-time captions by capturing audio from your microphone and transcribing it using the browser’s built-in Web Speech API (SpeechRecognition). Necessary for some but usable for all."/>
     <title>LIVE TEXT IRL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -52,14 +52,37 @@
             border-color: #33ff00;
             box-shadow: 1px 1px 0px 0px #33ff00;
         }
-        #teleprompter { /* Gäller båda vyerna, specifika justeringar i JS */
+        #teleprompter { 
             font-family: 'Menlo', 'Monaco', 'Consolas', "Courier New", monospace;
             line-height: 1.3; 
-            overflow-wrap: break-word; /* Bryt långa ord */
-            word-wrap: break-word; /* Äldre webbläsare */
-            hyphens: auto; /* Kan hjälpa till med avstavning */
+            overflow-wrap: break-word; 
+            word-wrap: break-word; 
+            hyphens: auto; 
         }
-        .fullscreen-controls {
+        
+        /* Styles for Maximized View */
+        body.body-maximized #main-container > header,
+        body.body-maximized #controls-panel {
+            display: none;
+        }
+        body.body-maximized #teleprompter-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000; 
+            border: none;
+            box-shadow: none;
+            padding: 0; 
+        }
+        body.body-maximized #teleprompter {
+            padding: 2rem; 
+            height: 100%; 
+            box-sizing: border-box;
+        }
+
+        .maximized-controls { /* Renamed from fullscreen-controls for clarity */
             position: fixed;
             bottom: 20px;
             left: 50%;
@@ -68,10 +91,17 @@
             padding: 10px;
             border: 2px solid white;
             box-shadow: 0 0 15px rgba(255,255,255,0.5);
-            z-index: 2147483647; 
+            z-index: 2000; /* Above maximized teleprompter */
             display: flex;
             gap: 10px;
+            border-radius: 0.5rem; /* Rounded corners for the strip */
         }
+         .maximized-controls .neobrutalist-button { /* Smaller buttons for the strip */
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem; /* text-sm */
+        }
+
+
         #qrModalContent {
              background-color: #1a1a1a;
              border: 2px solid #33ff00;
@@ -112,7 +142,7 @@
                         <button id="start-stop-btn" class="neobrutalist-button flex-grow">Starta Livetextning</button>
                         <button id="pause-resume-btn" class="neobrutalist-button flex-grow hidden">Pausa</button>
                     </div>
-                     <button id="fullscreen-btn" class="neobrutalist-button w-full">Helskärm Teleprompter</button>
+                     <button id="maximize-toggle-btn" class="neobrutalist-button w-full">Maximera Textfönster</button>
                 </div>
 
                 <!-- Textinställningar -->
@@ -161,19 +191,20 @@
         </div>
     </div>
 
-    <!-- Fullskärmskontroller (dolda initialt) -->
-    <div id="fullscreen-controls-strip" class="fullscreen-controls hidden">
-        <button id="fs-start-stop-btn" class="neobrutalist-button text-xs">Start</button>
-        <button id="fs-pause-resume-btn" class="neobrutalist-button text-xs">Paus</button>
-        <button id="fs-decrease-text-size" class="neobrutalist-button text-xs">-</button>
-        <span id="fs-text-size-display" class="text-white self-center text-xs">48px</span>
-        <button id="fs-increase-text-size" class="neobrutalist-button text-xs">+</button>
-        <input type="color" id="fs-text-color-picker" value="#FFFFFF" class="neobrutalist-input !p-0 !w-8 !h-8 !border-0">
-        <button id="fs-exit-fullscreen-btn" class="neobrutalist-button text-xs">Avsluta helskärm</button>
+    <!-- Maximized View Controls (initially hidden) -->
+    <div id="maximized-controls-strip" class="maximized-controls hidden">
+        <button id="max-start-stop-btn" class="neobrutalist-button">Start</button>
+        <button id="max-pause-resume-btn" class="neobrutalist-button">Paus</button>
+        <button id="max-decrease-text-size" class="neobrutalist-button">-</button>
+        <span id="max-text-size-display" class="text-white self-center text-xs">48px</span>
+        <button id="max-increase-text-size" class="neobrutalist-button">+</button>
+        <input type="color" id="max-text-color-picker" value="#FFFFFF" class="neobrutalist-input !p-0 !w-8 !h-8 !border-0">
+        <button id="exit-maximized-btn" class="neobrutalist-button">Minimera</button>
     </div>
 
+
     <!-- Modal för QR-kod/Länk -->
-    <div id="qrModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden p-4">
+    <div id="qrModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[1500] hidden p-4"> {/* Adjusted z-index */}
         <div id="qrModalContent" class="bg-black p-6 border-2 border-white shadow-[6px_6px_0px_0px_rgba(50,205,50,0.7)] w-full max-w-md text-center">
             <h3 class="text-2xl font-bold mb-4 text-[#33ff00]">Dela Livetextning</h3>
             <p class="mb-2 text-gray-300">Dela denna länk eller skanna QR-koden:</p>
@@ -184,7 +215,7 @@
     </div>
 
     <!-- Error Modal -->
-    <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[2147483647] hidden p-4">
+    <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[2500] hidden p-4"> {/* Adjusted z-index */}
         <div id="errorModalContent" class="p-6 w-full max-w-md text-center">
             <h3 class="text-2xl font-bold mb-4 text-red-400">Fel</h3>
             <p id="errorMessage" class="mb-4 text-gray-200"></p>
@@ -207,17 +238,19 @@
         const textColorPicker = document.getElementById('text-color-picker');
         const textColorValue = document.getElementById('text-color-value');
         const textSizeInput = document.getElementById('text-size-input');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const maximizeToggleBtn = document.getElementById('maximize-toggle-btn'); // Renamed from fullscreen-btn
         const teleprompterContainer = document.getElementById('teleprompter-container');
-        const mainContainer = document.getElementById('main-container');
-        const fullscreenControlsStrip = document.getElementById('fullscreen-controls-strip');
-        const fsStartStopBtn = document.getElementById('fs-start-stop-btn');
-        const fsPauseResumeBtn = document.getElementById('fs-pause-resume-btn');
-        const fsIncreaseTextSizeBtn = document.getElementById('fs-increase-text-size');
-        const fsDecreaseTextSizeBtn = document.getElementById('fs-decrease-text-size');
-        const fsTextColorPicker = document.getElementById('fs-text-color-picker');
-        const fsTextSizeDisplay = document.getElementById('fs-text-size-display');
-        const fsExitFullscreenBtn = document.getElementById('fs-exit-fullscreen-btn');
+        // const mainContainer = document.getElementById('main-container'); // Not strictly needed for body class toggle
+
+        const maximizedControlsStrip = document.getElementById('maximized-controls-strip');
+        const maxStartStopBtn = document.getElementById('max-start-stop-btn');
+        const maxPauseResumeBtn = document.getElementById('max-pause-resume-btn');
+        const maxDecreaseTextSizeBtn = document.getElementById('max-decrease-text-size');
+        const maxIncreaseTextSizeBtn = document.getElementById('max-increase-text-size');
+        const maxTextColorPicker = document.getElementById('max-text-color-picker');
+        const maxTextSizeDisplay = document.getElementById('max-text-size-display');
+        const exitMaximizedBtn = document.getElementById('exit-maximized-btn');
+        
         const shareBtn = document.getElementById('share-btn');
         const qrModal = document.getElementById('qrModal');
         const closeQrModalBtn = document.getElementById('close-qr-modal');
@@ -234,68 +267,52 @@
         let srtSegmentIndex = 1;
         let recognitionStartTime = 0;
         let currentFontSize = 48;
+        // undergoingControlledStop might not be as critical without native fullscreen complexities
+        // but can still be useful for language changes or explicit stops.
         let undergoingControlledStop = false; 
+        let isMaximized = false; // New state for maximized view
 
         // Text state variables
-        let fullTranscript = ""; // Accumulates all finalized text for normal view & SRT
-        let teleprompterDisplayLines = []; // Stores finalized text lines for fullscreen teleprompter display
-        const MAX_TELEPROMPTER_LINES = 7; // Max lines to show in teleprompter fullscreen view
-        let globalInterimTranscript = ""; // Stores current interim transcript
+        let fullTranscript = ""; 
+        let teleprompterDisplayLines = []; 
+        const MAX_TELEPROMPTER_LINES = 7; 
+        let globalInterimTranscript = ""; 
 
         if (!SpeechRecognition) {
             setInitialTeleprompterMessage('Web Speech API stöds inte. Prova Chrome/Edge.');
             startStopBtn.classList.add('disabled');
             pauseResumeBtn.classList.add('disabled');
-            fullscreenBtn.classList.add('disabled');
+            maximizeToggleBtn.classList.add('disabled');
         } else {
             recognition = new SpeechRecognition();
         }
 
         function initializeRecognition() {
-            // Create a new instance if one doesn't exist or if trying to recover
             if (!recognition) recognition = new SpeechRecognition();
-            
             recognition.lang = languageSelect.value;
             recognition.continuous = true; 
             recognition.interimResults = true; 
 
             recognition.onstart = () => {
                 console.log('Taligenkänning startad. State: isRecognizing=' + isRecognizing + ', isPaused=' + isPaused);
-                // The calling function (e.g. startStopBtn.onclick) should have set isRecognizing=true, isPaused=false.
                 updateUIState();
             };
 
             recognition.onresult = (event) => {
                 let newlyFinalizedSegmentText = ""; 
                 globalInterimTranscript = ""; 
-
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        newlyFinalizedSegmentText += event.results[i][0].transcript + ' ';
-                    } else {
-                        globalInterimTranscript += event.results[i][0].transcript;
-                    }
+                    if (event.results[i].isFinal) newlyFinalizedSegmentText += event.results[i][0].transcript + ' ';
+                    else globalInterimTranscript += event.results[i][0].transcript;
                 }
-                
                 if (newlyFinalizedSegmentText.trim() !== '') {
                     const trimmedSegment = newlyFinalizedSegmentText.trim();
                     fullTranscript += trimmedSegment + ' '; 
-
                     teleprompterDisplayLines.push(trimmedSegment);
-                    while (teleprompterDisplayLines.length > MAX_TELEPROMPTER_LINES) {
-                        teleprompterDisplayLines.shift(); 
-                    }
-
+                    while (teleprompterDisplayLines.length > MAX_TELEPROMPTER_LINES) teleprompterDisplayLines.shift(); 
                     const segmentEndTimeMs = Date.now() - recognitionStartTime;
                     const segmentStartTimeMs = srtEntries.length > 0 ? srtEntries[srtEntries.length - 1].rawEndMs : 0;
-            
-                    srtEntries.push({
-                        index: srtSegmentIndex++,
-                        start: formatSrtTime(segmentStartTimeMs),
-                        end: formatSrtTime(segmentEndTimeMs),
-                        text: trimmedSegment,
-                        rawEndMs: segmentEndTimeMs 
-                    });
+                    srtEntries.push({ index: srtSegmentIndex++, start: formatSrtTime(segmentStartTimeMs), end: formatSrtTime(segmentEndTimeMs), text: trimmedSegment, rawEndMs: segmentEndTimeMs });
                     downloadSrtBtn.classList.remove('disabled');
                 }
                 updateLiveDisplay(); 
@@ -307,66 +324,41 @@
                  if (event.error === 'no-speech') errorMsgText = "Inget tal uppfattades.";
                  else if (event.error === 'audio-capture') errorMsgText = "Problem med mikrofon.";
                  else if (event.error === 'not-allowed') errorMsgText = "Åtkomst till mikrofon nekad.";
-                
                 globalInterimTranscript = ""; 
                 setInitialTeleprompterMessage(`FEL: ${errorMsgText}`);
-                
-                isRecognizing = false; 
-                isPaused = false; // Ensure fully stopped state on error
+                isRecognizing = false; isPaused = false; 
                 updateUIState();
             };
 
             recognition.onend = () => {
                 const wasControlled = undergoingControlledStop;
-                undergoingControlledStop = false; // Reset flag for the next operation
-
+                undergoingControlledStop = false; 
                 console.log(`onend: Fired. Was controlled: ${wasControlled}. Current state: isRecognizing=${isRecognizing}, isPaused=${isPaused}`);
-
                 if (wasControlled) {
-                    // If it was a controlled stop, the function that initiated the stop
-                    // (e.g., pause button, stop button, language change, FS change's setTimeout)
-                    // is responsible for setting the correct isRecognizing/isPaused state.
-                    // This onend handler should primarily reflect that state or finalize UI.
-                    console.log("onend: Controlled stop. State should be managed by initiator.");
-                    if (isPaused) { // If the controlled stop was to pause
-                         setInitialTeleprompterMessage('Pausad...');
-                    } else if (!isRecognizing) { // If the controlled stop was to fully stop
-                         setInitialTeleprompterMessage('Livetextning stoppad.');
-                         globalInterimTranscript = "";
-                    }
-                    // If it was a controlled stop for FS change or lang change, the specific
-                    // handler will set messages like 'Fortsätter...' or 'Startar med nytt språk...'
+                    if (isPaused) setInitialTeleprompterMessage('Pausad...');
+                    else if (!isRecognizing) { setInitialTeleprompterMessage('Livetextning stoppad.'); globalInterimTranscript = "";}
                 } else {
-                    // This was an unexpected stop (e.g., error handled by onerror, or browser just stopped it)
                     console.warn("onend: Unexpected stop. Assuming full stop.");
-                    isRecognizing = false;
-                    isPaused = false;
-                    setInitialTeleprompterMessage('Livetextning stoppad oväntat.');
-                    globalInterimTranscript = "";
+                    isRecognizing = false; isPaused = false;
+                    setInitialTeleprompterMessage('Livetextning stoppad oväntat.'); globalInterimTranscript = "";
                 }
                 updateUIState(); 
             };
         }
         
         function updateLiveDisplay() {
-            if (document.fullscreenElement === teleprompterContainer) {
+            if (isMaximized) { // Check our custom maximized state
                 teleprompter.style.overflowY = 'hidden';
                 teleprompter.style.whiteSpace = 'pre'; 
-
                 let screenBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
                 let linesToRender = [...teleprompterDisplayLines];
-                
-                if (globalInterimTranscript.trim()) {
-                    linesToRender.push(globalInterimTranscript.trim());
-                }
-                
+                if (globalInterimTranscript.trim()) linesToRender.push(globalInterimTranscript.trim());
                 let bufferIdx = MAX_TELEPROMPTER_LINES - 1;
                 for (let lineIdx = linesToRender.length - 1; lineIdx >= 0 && bufferIdx >= 0; lineIdx--) {
-                    screenBuffer[bufferIdx] = linesToRender[lineIdx];
-                    bufferIdx--;
+                    screenBuffer[bufferIdx] = linesToRender[lineIdx]; bufferIdx--;
                 }
                 teleprompter.textContent = screenBuffer.join('\n');
-            } else {
+            } else { // Normal view
                 teleprompter.style.overflowY = 'auto';
                 teleprompter.style.whiteSpace = 'pre-wrap'; 
                 teleprompter.textContent = fullTranscript + globalInterimTranscript;
@@ -377,190 +369,165 @@
         function setInitialTeleprompterMessage(message) {
             console.log("Setting initial message:", message);
             globalInterimTranscript = ""; 
-            if (document.fullscreenElement === teleprompterContainer) {
+            if (isMaximized) { // Check our custom maximized state
                 teleprompterDisplayLines = []; 
                 let initialBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
-                if (MAX_TELEPROMPTER_LINES > 0) {
-                    initialBuffer[MAX_TELEPROMPTER_LINES - 1] = message;
-                }
+                if (MAX_TELEPROMPTER_LINES > 0) initialBuffer[MAX_TELEPROMPTER_LINES - 1] = message;
                 teleprompter.textContent = initialBuffer.join('\n');
-                teleprompter.style.overflowY = 'hidden';
-                teleprompter.style.whiteSpace = 'pre';
+                teleprompter.style.overflowY = 'hidden'; teleprompter.style.whiteSpace = 'pre';
             } else {
                 fullTranscript = ""; 
                 teleprompter.textContent = message;
-                teleprompter.style.overflowY = 'auto';
-                teleprompter.style.whiteSpace = 'pre-wrap';
+                teleprompter.style.overflowY = 'auto'; teleprompter.style.whiteSpace = 'pre-wrap';
             }
         }
 
         function updateUIState() {
-            console.log("Updating UI State: isRecognizing=" + isRecognizing + ", isPaused=" + isPaused);
+            console.log("Updating UI State: isRecognizing=" + isRecognizing + ", isPaused=" + isPaused + ", isMaximized=" + isMaximized);
+            // Main controls
             if (isRecognizing && !isPaused) {
-                startStopBtn.textContent = 'Stoppa Livetextning';
-                fsStartStopBtn.textContent = 'Stoppa';
-                pauseResumeBtn.textContent = 'Pausa';
-                fsPauseResumeBtn.textContent = 'Pausa';
-                pauseResumeBtn.classList.remove('hidden', 'disabled');
-                fsPauseResumeBtn.classList.remove('disabled');
+                startStopBtn.textContent = 'Stoppa Livetextning'; maxStartStopBtn.textContent = 'Stoppa';
+                pauseResumeBtn.textContent = 'Pausa'; maxPauseResumeBtn.textContent = 'Pausa';
+                pauseResumeBtn.classList.remove('hidden', 'disabled'); maxPauseResumeBtn.disabled = false;
                 languageSelect.disabled = true;
             } else if (isRecognizing && isPaused) {
-                startStopBtn.textContent = 'Stoppa Livetextning'; 
-                fsStartStopBtn.textContent = 'Stoppa';
-                pauseResumeBtn.textContent = 'Återuppta';
-                fsPauseResumeBtn.textContent = 'Återuppta';
-                pauseResumeBtn.classList.remove('hidden', 'disabled');
-                fsPauseResumeBtn.classList.remove('disabled');
+                startStopBtn.textContent = 'Stoppa Livetextning'; maxStartStopBtn.textContent = 'Stoppa';
+                pauseResumeBtn.textContent = 'Återuppta'; maxPauseResumeBtn.textContent = 'Återuppta';
+                pauseResumeBtn.classList.remove('hidden', 'disabled'); maxPauseResumeBtn.disabled = false;
                 languageSelect.disabled = true;
             } else { 
-                startStopBtn.textContent = 'Starta Livetextning';
-                fsStartStopBtn.textContent = 'Starta';
-                pauseResumeBtn.textContent = 'Pausa'; 
-                fsPauseResumeBtn.textContent = 'Pausa';
-                pauseResumeBtn.classList.add('hidden'); 
-                fsPauseResumeBtn.classList.add('disabled');
+                startStopBtn.textContent = 'Starta Livetextning'; maxStartStopBtn.textContent = 'Starta';
+                pauseResumeBtn.textContent = 'Pausa'; maxPauseResumeBtn.textContent = 'Pausa';
+                pauseResumeBtn.classList.add('hidden'); maxPauseResumeBtn.disabled = true;
                 languageSelect.disabled = false;
             }
             downloadSrtBtn.classList.toggle('disabled', srtEntries.length === 0);
-             // Ensure fullscreen controls are correctly visible/hidden based on actual fullscreen state
-            fullscreenControlsStrip.classList.toggle('hidden', !document.fullscreenElement);
+            
+            // Maximized view controls visibility and main button text
+            maximizedControlsStrip.classList.toggle('hidden', !isMaximized);
+            maximizeToggleBtn.textContent = isMaximized ? 'Minimera Textfönster' : 'Maximera Textfönster';
+            
+            // Sync text style display in maximized controls
+            maxTextSizeDisplay.textContent = `${currentFontSize}px`;
+            maxTextColorPicker.value = textColorPicker.value;
         }
 
         startStopBtn.onclick = () => {
-            if (!SpeechRecognition) return; // Guard if API not supported
+            if (!SpeechRecognition) return; 
             if (!recognition) initializeRecognition(); 
-            
-            if (isRecognizing) { // If running or paused, stop the session
+            if (isRecognizing) {
                 console.log("Start/Stop Button: Stopping recognition.");
-                undergoingControlledStop = true;
-                recognition.stop(); 
-                isRecognizing = false; 
-                isPaused = false;
-                // onend will call updateUIState and set 'Livetextning stoppad.'
-            } else { // If stopped, start new session
+                undergoingControlledStop = true; recognition.stop(); 
+                isRecognizing = false; isPaused = false;
+            } else {
                 console.log("Start/Stop Button: Starting recognition.");
-                fullTranscript = ""; 
-                teleprompterDisplayLines = []; 
-                globalInterimTranscript = "";
-                srtEntries = [];
-                srtSegmentIndex = 1;
-                recognitionStartTime = Date.now(); 
-                
+                fullTranscript = ""; teleprompterDisplayLines = []; globalInterimTranscript = "";
+                srtEntries = []; srtSegmentIndex = 1; recognitionStartTime = Date.now(); 
                 setInitialTeleprompterMessage('Startar igenkänning...');
-                
-                isRecognizing = true; 
-                isPaused = false;
-                // Initialize might recreate recognition if it was nulled by error
-                if(!recognition) initializeRecognition(); 
-                else recognition.lang = languageSelect.value; // Ensure lang is current
-
-                try {
-                    recognition.start(); // onstart will call updateUIState
-                } catch(e) {
-                    console.error("Error on recognition.start():", e);
-                    isRecognizing = false; 
-                    setInitialTeleprompterMessage("Kunde inte starta igenkänning: " + e.message);
-                    updateUIState(); // Reflect failed start
-                }
+                isRecognizing = true; isPaused = false;
+                if(!recognition) initializeRecognition(); else recognition.lang = languageSelect.value;
+                try { recognition.start(); } 
+                catch(e) { console.error("Error on recognition.start():", e); isRecognizing = false; setInitialTeleprompterMessage("Kunde inte starta: " + e.message); updateUIState(); }
             }
         };
 
         pauseResumeBtn.onclick = () => {
-            if (!SpeechRecognition || !isRecognizing) return; // Can only pause/resume an active session
-
-            if (isPaused) { // If paused, resume
+            if (!SpeechRecognition || !isRecognizing) return; 
+            if (isPaused) {
                 console.log("Pause/Resume Button: Resuming recognition.");
-                isPaused = false;
-                setInitialTeleprompterMessage('Återupptar...'); 
+                isPaused = false; setInitialTeleprompterMessage('Återupptar...'); 
                 if (recognition) { 
-                     try { 
-                        // Re-initialize to ensure settings are fresh if needed by browser
-                        // but be careful not to create new instance if not necessary
-                        recognition.lang = languageSelect.value; // Ensure lang is current
-                        recognition.start();  // onstart will call updateUIState
-                    } catch (e) { 
-                        console.warn("Error resuming existing recognition, creating new.", e); 
-                        recognition = new SpeechRecognition(); // Create new instance if resume fails
-                        initializeRecognition(); 
-                        recognition.start(); 
-                    }
-                } else { // Should not happen if isRecognizing is true, but as a fallback
-                    console.error("Pause/Resume: Recognition object missing while trying to resume.");
-                    initializeRecognition(); recognition.start(); 
-                }
-            } else { // If running, pause it
+                     try { recognition.lang = languageSelect.value; recognition.start(); } 
+                     catch (e) { console.warn("Error resuming, creating new.", e); recognition = new SpeechRecognition(); initializeRecognition(); recognition.start(); }
+                } else { console.error("Pause/Resume: Rec missing."); initializeRecognition(); recognition.start(); }
+            } else {
                 console.log("Pause/Resume Button: Pausing recognition.");
-                isPaused = true; // isRecognizing remains true
-                if (recognition) { 
-                    undergoingControlledStop = true; 
-                    recognition.stop(); // onend will set 'Pausad...' message and updateUIState
-                }
+                isPaused = true; 
+                if (recognition) { undergoingControlledStop = true; recognition.stop(); }
             }
         };
         
-        fsStartStopBtn.onclick = () => startStopBtn.click();
-        fsPauseResumeBtn.onclick = () => pauseResumeBtn.click();
+        // Link maximized controls to main control logic
+        maxStartStopBtn.onclick = () => startStopBtn.click();
+        maxPauseResumeBtn.onclick = () => pauseResumeBtn.click();
+        exitMaximizedBtn.onclick = () => maximizeToggleBtn.click(); // Toggle maximize state
+
+        maxDecreaseTextSizeBtn.onclick = () => { decreaseTextSizeBtn.click(); updateUIState(); }; // updateUIState to refresh maxTextSizeDisplay
+        maxIncreaseTextSizeBtn.onclick = () => { increaseTextSizeBtn.click(); updateUIState(); };
+        maxTextColorPicker.oninput = () => { textColorPicker.value = maxTextColorPicker.value; textColorPicker.dispatchEvent(new Event('input')); updateUIState(); };
+
 
         languageSelect.onchange = () => {
             if (!SpeechRecognition) return;
             const wasRunning = isRecognizing && !isPaused;
             const wasPausedByUser = isRecognizing && isPaused; 
-
             if (isRecognizing) { 
-                console.log("Language change: Stopping current recognition for language update.");
-                undergoingControlledStop = true;
-                if (recognition) recognition.stop();
-                // State will be set in setTimeout
-                
+                console.log("Language change: Stopping current recognition.");
+                undergoingControlledStop = true; if (recognition) recognition.stop();
                 setTimeout(() => {
                     console.log(`Lang change timeout. Prev state: wasRunning=${wasRunning}, wasPausedByUser=${wasPausedByUser}`);
                     if (wasRunning) { 
                        fullTranscript = ""; teleprompterDisplayLines = []; globalInterimTranscript = ""; 
                        srtEntries = []; srtSegmentIndex = 1; recognitionStartTime = Date.now();
                        setInitialTeleprompterMessage('Startar med nytt språk...');
-                       isRecognizing = true; isPaused = false; // Set state for restart
-                       initializeRecognition(); // This will pick up new lang
+                       isRecognizing = true; isPaused = false; 
+                       initializeRecognition(); 
                        try { recognition.start(); } catch (e) { isRecognizing=false; updateUIState(); console.error("Lang change start error:", e); }
                     } else if (wasPausedByUser) {
-                        isRecognizing = true; isPaused = true; // Maintain paused state
+                        isRecognizing = true; isPaused = true; 
                         initializeRecognition(); 
                         setInitialTeleprompterMessage('Språk ändrat. Återuppta för att fortsätta.');
                         updateUIState(); 
-                    } else { // Was stopped for other reasons or became stopped during the process
-                         initializeRecognition(); // Set new lang for next manual start
-                         isRecognizing = false; isPaused = false; 
-                         updateUIState();
+                    } else { 
+                         initializeRecognition(); isRecognizing = false; isPaused = false; updateUIState();
                     }
                 }, 350); 
-            } else { 
-                 if (recognition) recognition.lang = languageSelect.value; 
-                 else initializeRecognition(); 
-            }
+            } else { if (recognition) recognition.lang = languageSelect.value; else initializeRecognition(); }
         };
 
         function updateTeleprompterStyle() {
             teleprompter.style.fontSize = `${currentFontSize}px`;
             teleprompter.style.color = textColorPicker.value;
-            fsTextColorPicker.value = textColorPicker.value; 
-            textSizeInput.value = currentFontSize;
-            fsTextSizeDisplay.textContent = `${currentFontSize}px`;
+            // Sync to maximized controls if they exist, done in updateUIState to ensure elements are current
+            if (document.getElementById('max-text-color-picker')) maxTextColorPicker.value = textColorPicker.value; 
+            if (document.getElementById('max-text-size-display')) maxTextSizeDisplay.textContent = `${currentFontSize}px`;
+            textColorValue.textContent = textColorPicker.value.toUpperCase(); // Main control panel display
         }
 
-        increaseTextSizeBtn.onclick = () => { currentFontSize = Math.min(120, currentFontSize + 2); updateTeleprompterStyle(); };
-        decreaseTextSizeBtn.onclick = () => { currentFontSize = Math.max(16, currentFontSize - 2); updateTeleprompterStyle(); };
+        increaseTextSizeBtn.onclick = () => { currentFontSize = Math.min(120, currentFontSize + 2); updateTeleprompterStyle(); updateUIState();};
+        decreaseTextSizeBtn.onclick = () => { currentFontSize = Math.max(16, currentFontSize - 2); updateTeleprompterStyle(); updateUIState();};
         textSizeInput.onchange = (e) => {
             const newSize = parseInt(e.target.value);
-            if (!isNaN(newSize) && newSize >=16 && newSize <= 120) { currentFontSize = newSize; updateTeleprompterStyle(); } 
+            if (!isNaN(newSize) && newSize >=16 && newSize <= 120) { currentFontSize = newSize; updateTeleprompterStyle(); updateUIState();} 
             else { e.target.value = currentFontSize; }
         };
         textSizeInput.onblur = (e) => { 
              const newSize = parseInt(e.target.value);
             if (isNaN(newSize) || newSize < 16 || newSize > 120) { e.target.value = currentFontSize; }
         }
-        textColorPicker.oninput = () => { updateTeleprompterStyle(); textColorValue.textContent = textColorPicker.value.toUpperCase(); };
-        fsIncreaseTextSizeBtn.onclick = () => increaseTextSizeBtn.click();
-        fsDecreaseTextSizeBtn.onclick = () => decreaseTextSizeBtn.click();
-        fsTextColorPicker.oninput = () => { textColorPicker.value = fsTextColorPicker.value; updateTeleprompterStyle(); textColorValue.textContent = textColorPicker.value.toUpperCase(); };
+        textColorPicker.oninput = () => { updateTeleprompterStyle(); updateUIState(); };
+        
+
+        maximizeToggleBtn.onclick = () => {
+            if (!SpeechRecognition) return;
+            isMaximized = !isMaximized;
+            document.body.classList.toggle('body-maximized', isMaximized);
+            
+            // No need to stop/start recognition, just update the display
+            updateLiveDisplay(); // Adjusts text rendering to new mode
+            updateUIState();     // Updates button texts and visibility of maximized controls
+            
+            if (isMaximized) {
+                console.log("View Maximized");
+                // Ensure the teleprompter display mode is correct if we were in normal view
+                setInitialTeleprompterMessage(isRecognizing && !isPaused ? "Textning pågår..." : (isPaused ? "Pausad..." : "Maximerad vy, redo."));
+            } else {
+                console.log("View Minimized (Normal)");
+                 // Ensure the teleprompter display mode is correct if we were in teleprompter line view
+                setInitialTeleprompterMessage(isRecognizing && !isPaused ? "Textning pågår..." : (isPaused ? "Pausad..." : "Väntar på start..."));
+            }
+        };
+
 
         function formatSrtTime(milliseconds) {
             let seconds = Math.floor(milliseconds / 1000);
@@ -587,76 +554,6 @@
         closeErrorModalBtn.onclick = () => errorModal.classList.add('hidden');
         errorModal.onclick = (event) => { if (event.target === errorModal) errorModal.classList.add('hidden'); };
 
-        fullscreenBtn.onclick = () => {
-            if (!SpeechRecognition) return;
-            if (document.fullscreenElement) {
-                document.exitFullscreen().catch(err => console.warn("Error exiting fullscreen:", err));
-            } else {
-                teleprompterContainer.requestFullscreen().catch(err => showErrorModal(`Helskärmsfel: ${err.message}`));
-            }
-        };
-        fsExitFullscreenBtn.onclick = () => { 
-            if (document.fullscreenElement) {
-                document.exitFullscreen().catch(err => console.warn("Error exiting fullscreen from FS button:", err));
-            }
-        };
-
-        document.addEventListener('fullscreenchange', () => {
-            console.log("Fullscreen change event. New fullscreenElement:", document.fullscreenElement);
-            const wasRunning = isRecognizing && !isPaused;
-            const wasPaused = isRecognizing && isPaused; // User explicitly paused
-
-            // If recognition was active (running or paused), stop it for the transition
-            if (recognition && isRecognizing) { 
-                console.log("Fullscreen change: Stopping current recognition (controlled) for transition.");
-                undergoingControlledStop = true; 
-                recognition.stop(); 
-            }
-
-            // UI updates for entering/exiting fullscreen
-            if (document.fullscreenElement === teleprompterContainer) {
-                mainContainer.classList.add('hidden'); 
-                // fullscreenControlsStrip is updated by updateUIState
-                teleprompter.style.height = '100vh'; 
-                teleprompterContainer.classList.remove('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
-                teleprompterContainer.classList.add('p-0'); 
-                teleprompter.classList.remove('p-6', 'md:p-10'); 
-                teleprompter.classList.add('p-8', 'md:p-12');  
-            } else { // Exiting fullscreen
-                mainContainer.classList.remove('hidden'); 
-                teleprompter.style.height = ''; 
-                teleprompterContainer.classList.add('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
-                teleprompterContainer.classList.remove('p-0');
-                teleprompter.classList.remove('p-8', 'md:p-12'); 
-                teleprompter.classList.add('p-6', 'md:p-10'); 
-            }
-            updateLiveDisplay(); // Update display immediately for new mode styling (e.g. pre vs pre-wrap)
-
-            // Logic to restart/maintain state after transition (runs after stop's onend)
-            setTimeout(() => {
-                console.log(`FS Change Timeout. Prev state: wasRunning=${wasRunning}, wasPaused=${wasPaused}`);
-                if (wasRunning) {
-                    console.log("FS Change: Restarting recognition as it was running.");
-                    isRecognizing = true; isPaused = false;
-                    setInitialTeleprompterMessage('Fortsätter textning...'); 
-                    initializeRecognition(); 
-                    try { recognition.start(); } // onstart calls updateUIState
-                    catch (e) { console.error("FS Change: Error restarting recognition:", e); isRecognizing = false; updateUIState(); }
-                } else if (wasPaused) {
-                    console.log("FS Change: Maintaining paused state.");
-                    isRecognizing = true; isPaused = true;    
-                    initializeRecognition(); // Ensure lang is set for potential resume
-                    setInitialTeleprompterMessage('Pausad. Klicka återuppta för att fortsätta.');
-                    updateUIState(); 
-                } else { // Was fully stopped before FS change or became stopped
-                    console.log("FS Change: Was not running or paused. Ensuring stopped state.");
-                    isRecognizing = false; isPaused = false;
-                    setInitialTeleprompterMessage('Redo att starta.'); // Or whatever is appropriate
-                    updateUIState();
-                }
-            }, 400); // Increased delay slightly
-        });
-
         let qrCodeInstance = null;
         shareBtn.onclick = () => {
             const currentUrl = window.location.href;
@@ -675,12 +572,12 @@
 
         textSizeInput.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
-            if (!isNaN(val) && val >= 10 && val <= 120) { currentFontSize = val; updateTeleprompterStyle(); }
+            if (!isNaN(val) && val >= 10 && val <= 120) { currentFontSize = val; updateTeleprompterStyle(); updateUIState(); }
         });
          textSizeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const val = parseInt(e.target.value);
-                 if (!isNaN(val) && val >= 10 && val <= 120) { currentFontSize = val; updateTeleprompterStyle(); } 
+                 if (!isNaN(val) && val >= 10 && val <= 120) { currentFontSize = val; updateTeleprompterStyle(); updateUIState();} 
                  else { textSizeInput.value = currentFontSize; }
             }
         });
