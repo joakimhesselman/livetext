@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="This live text app is designed to provide real-time captions by capturing audio from your microphone and transcribing it using the browser’s built-in Web Speech API (SpeechRecognition). Necessary for some but usable for all."/>
-    <title>LIVE TEXT IRL</title>
+    <title>LIVE TEXT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
@@ -52,13 +51,12 @@
             border-color: #33ff00;
             box-shadow: 1px 1px 0px 0px #33ff00;
         }
-        #teleprompter {
+        #teleprompter { /* Gäller båda vyerna, specifika justeringar i JS */
             font-family: 'Menlo', 'Monaco', 'Consolas', "Courier New", monospace;
-            line-height: 1.3; /* Justerat för tydlighet */
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            hyphens: auto;
-            white-space: pre; /* Viktigt för att \n ska skapa nya rader och tomma rader ska visas */
+            line-height: 1.3; 
+            overflow-wrap: break-word; /* Bryt långa ord */
+            word-wrap: break-word; /* Äldre webbläsare */
+            hyphens: auto; /* Kan hjälpa till med avstavning */
         }
         .fullscreen-controls {
             position: fixed;
@@ -88,8 +86,8 @@
 
     <div id="main-container" class="container mx-auto p-4 flex flex-col flex-grow">
         <header class="mb-6 text-center">
-            <h1 class="text-5xl font-bold tracking-tighter">LIVE TEXT IRL</h1>
-            <p class="text-sm text-gray-400 mt-1">Direkttextning i din webbläsare. Nödvändigt för vissa, men användbart för alla.</p>
+            <h1 class="text-5xl font-bold tracking-tighter">LIVE TEXT</h1>
+            <p class="text-sm text-gray-400 mt-1">Direkttextning i din webbläsare</p>
         </header>
 
         <!-- Kontrollpanel -->
@@ -156,7 +154,7 @@
 
         <!-- Teleprompter -->
         <div id="teleprompter-container" class="flex-grow flex flex-col bg-black border-2 border-gray-600 shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]">
-            <div id="teleprompter" class="w-full flex-grow p-6 md:p-10 text-5xl text-white overflow-y-hidden">
+            <div id="teleprompter" aria-live="polite" aria-atomic="false" class="w-full flex-grow p-6 md:p-10 text-5xl text-white">
                 {/* Innehåll styrs av JavaScript */}
             </div>
         </div>
@@ -237,9 +235,10 @@
         let currentFontSize = 48;
         let undergoingControlledStop = false; 
 
-        // Teleprompter display variables
-        let finalizedLines = []; // Stores finalized text lines for teleprompter display
-        const MAX_TELEPROMPTER_LINES = 7; // Max lines to show in teleprompter
+        // Text state variables
+        let fullTranscript = ""; // Accumulates all finalized text for normal view & SRT
+        let teleprompterDisplayLines = []; // Stores finalized text lines for fullscreen teleprompter display
+        const MAX_TELEPROMPTER_LINES = 7; // Max lines to show in teleprompter fullscreen view
         let globalInterimTranscript = ""; // Stores current interim transcript
 
         if (!SpeechRecognition) {
@@ -253,17 +252,18 @@
         function initializeRecognition() {
             if (!recognition) recognition = new SpeechRecognition();
             recognition.lang = languageSelect.value;
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.continuous = true; // Keep listening
+            recognition.interimResults = true; // Get results as they come
 
             recognition.onstart = () => {
                 console.log('Taligenkänning startad');
+                // isRecognizing and isPaused are typically set by the function calling start()
                 updateUIState();
             };
 
             recognition.onresult = (event) => {
-                globalInterimTranscript = ""; 
                 let newlyFinalizedSegmentText = ""; 
+                globalInterimTranscript = ""; // Reset before processing current event results
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
@@ -274,28 +274,30 @@
                 }
                 
                 if (newlyFinalizedSegmentText.trim() !== '') {
-                    const segments = newlyFinalizedSegmentText.trim().split('\n').filter(s => s.trim());
-                    segments.forEach(seg => {
-                        finalizedLines.push(seg);
-                        while (finalizedLines.length > MAX_TELEPROMPTER_LINES) {
-                            finalizedLines.shift(); // Keep only the last MAX_TELEPROMPTER_LINES
-                        }
+                    const trimmedSegment = newlyFinalizedSegmentText.trim();
+                    fullTranscript += trimmedSegment + ' '; // Add to full transcript for normal view
 
-                        // Add to SRT
-                        const segmentEndTimeMsDuration = Date.now() - recognitionStartTime;
-                        const segmentStartTimeMsDuration = srtEntries.length > 0 ? srtEntries[srtEntries.length - 1].rawEndMsDuration : 0;
-                
-                        srtEntries.push({
-                            index: srtSegmentIndex++,
-                            start: formatSrtTime(segmentStartTimeMsDuration),
-                            end: formatSrtTime(segmentEndTimeMsDuration),
-                            text: seg,
-                            rawEndMsDuration: segmentEndTimeMsDuration 
-                        });
+                    // Update teleprompterDisplayLines for fullscreen view
+                    teleprompterDisplayLines.push(trimmedSegment);
+                    while (teleprompterDisplayLines.length > MAX_TELEPROMPTER_LINES) {
+                        teleprompterDisplayLines.shift(); 
+                    }
+
+                    // Add to SRT
+                    const segmentEndTimeMs = Date.now() - recognitionStartTime;
+                    // Start time is the end time of the previous segment, or 0 if it's the first.
+                    const segmentStartTimeMs = srtEntries.length > 0 ? srtEntries[srtEntries.length - 1].rawEndMs : 0;
+            
+                    srtEntries.push({
+                        index: srtSegmentIndex++,
+                        start: formatSrtTime(segmentStartTimeMs),
+                        end: formatSrtTime(segmentEndTimeMs),
+                        text: trimmedSegment,
+                        rawEndMs: segmentEndTimeMs // Store raw end time for next segment's start
                     });
                     downloadSrtBtn.classList.remove('disabled');
                 }
-                renderTeleprompterDisplay();
+                updateLiveDisplay(); // Update the actual display based on current mode
             };
 
             recognition.onerror = (event) => {
@@ -305,66 +307,90 @@
                  else if (event.error === 'audio-capture') errorMsgText = "Problem med mikrofon.";
                  else if (event.error === 'not-allowed') errorMsgText = "Åtkomst till mikrofon nekad.";
                 
-                let errorBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
-                if (MAX_TELEPROMPTER_LINES > 0) {
-                    const lastGoodLine = finalizedLines.length > 0 ? finalizedLines[finalizedLines.length - 1] : "";
-                    if (MAX_TELEPROMPTER_LINES > 1 && lastGoodLine) {
-                        errorBuffer[MAX_TELEPROMPTER_LINES - 2] = lastGoodLine;
-                    }
-                    errorBuffer[MAX_TELEPROMPTER_LINES - 1] = `FEL: ${errorMsgText}`;
-                } else {
-                    errorBuffer[0] = `FEL: ${errorMsgText}`;
-                }
-                teleprompter.textContent = errorBuffer.join('\n');
-                
+                globalInterimTranscript = ""; 
+                setInitialTeleprompterMessage(`FEL: ${errorMsgText}`);
+
                 isRecognizing = false; 
+                // isPaused state could remain if it was a recoverable error during pause, but typically stop.
                 updateUIState();
             };
 
             recognition.onend = () => {
                 console.log('Taligenkänning avslutad.');
                 const wasUndergoingControlledStop = undergoingControlledStop;
-                
-                if (undergoingControlledStop) {
-                     // State (isRecognizing, isPaused) should have been set by the function that called stop()
-                    console.log("onend: Controlled stop. State (isRecognizing, isPaused):", isRecognizing, isPaused);
-                } else { 
-                    console.warn("onend: Unexpected stop. Setting isRecognizing = false.");
-                    isRecognizing = false;
-                    isPaused = false; 
-                }
-                undergoingControlledStop = false; 
+                undergoingControlledStop = false; // Reset flag immediately
 
-                if (!isRecognizing && !isPaused) { // Final stop for this session
+                if (wasUndergoingControlledStop) {
+                    console.log("onend: Controlled stop. State (isRecognizing, isPaused):", isRecognizing, isPaused);
+                    // State (isRecognizing, isPaused) should have been set by the function that initiated the controlled stop.
+                    // For example, if pausing, isRecognizing=true, isPaused=true.
+                    // If stopping, isRecognizing=false, isPaused=false.
+                } else if (isRecognizing && !isPaused) { 
+                    // Truly unexpected stop if it was supposed to be running
+                    console.warn("onend: Unexpected stop while active. Setting isRecognizing = false.");
+                    isRecognizing = false; 
+                    isPaused = false;
+                }
+                // If isPaused is true, isRecognizing should generally remain true unless it was a full stop.
+                // If !isRecognizing, it was a manual stop or an unrecoverable error.
+
+                // If fully stopped (not paused, not a temporary stop for FS change)
+                if (!isRecognizing && !isPaused) { 
                     setInitialTeleprompterMessage('Livetextning stoppad.');
-                    globalInterimTranscript = ""; 
+                    globalInterimTranscript = ""; // Clear any lingering interim text
                 }
                 updateUIState();
             };
         }
         
-        function renderTeleprompterDisplay() {
-            let linesForScreen = [...finalizedLines];
-            if (globalInterimTranscript.trim()) {
-                linesForScreen.push(globalInterimTranscript.trim());
-            }
+        function updateLiveDisplay() {
+            if (document.fullscreenElement === teleprompterContainer) {
+                // Fullscreen teleprompter style
+                teleprompter.style.overflowY = 'hidden';
+                teleprompter.style.whiteSpace = 'pre'; // For \n in buffer to create new lines visually
 
-            let screenBuffer = Array(MAX_TELEPROMPTER_LINES).fill(''); 
+                let screenBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
+                let linesToRender = [...teleprompterDisplayLines];
+                
+                if (globalInterimTranscript.trim()) {
+                    // In fullscreen, interim text is effectively the "next" line being formed at the bottom
+                    linesToRender.push(globalInterimTranscript.trim());
+                }
+                
+                // Fill buffer from bottom up
+                let bufferIdx = MAX_TELEPROMPTER_LINES - 1;
+                for (let lineIdx = linesToRender.length - 1; lineIdx >= 0 && bufferIdx >= 0; lineIdx--) {
+                    screenBuffer[bufferIdx] = linesToRender[lineIdx];
+                    bufferIdx--;
+                }
+                teleprompter.textContent = screenBuffer.join('\n');
 
-            let bufferIdx = MAX_TELEPROMPTER_LINES - 1;
-            for (let lineIdx = linesForScreen.length - 1; lineIdx >= 0 && bufferIdx >= 0; lineIdx--) {
-                screenBuffer[bufferIdx] = linesForScreen[lineIdx];
-                bufferIdx--;
+            } else {
+                // Normal view: top-left, scrolling
+                teleprompter.style.overflowY = 'auto';
+                teleprompter.style.whiteSpace = 'pre-wrap'; // Allows normal text wrapping & respects \n from speech
+                teleprompter.textContent = fullTranscript + globalInterimTranscript;
+                teleprompter.scrollTop = teleprompter.scrollHeight; // Auto-scroll
             }
-            teleprompter.textContent = screenBuffer.join('\n');
         }
 
         function setInitialTeleprompterMessage(message) {
-            let initialBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
-            if (MAX_TELEPROMPTER_LINES > 0) {
-                initialBuffer[MAX_TELEPROMPTER_LINES - 1] = message;
+            globalInterimTranscript = ""; // Clear interim on initial messages
+            if (document.fullscreenElement === teleprompterContainer) {
+                teleprompterDisplayLines = []; // Clear previous lines for FS mode
+                let initialBuffer = Array(MAX_TELEPROMPTER_LINES).fill('');
+                if (MAX_TELEPROMPTER_LINES > 0) {
+                    initialBuffer[MAX_TELEPROMPTER_LINES - 1] = message;
+                }
+                teleprompter.textContent = initialBuffer.join('\n');
+                teleprompter.style.overflowY = 'hidden';
+                teleprompter.style.whiteSpace = 'pre';
+            } else {
+                fullTranscript = ""; // Clear previous transcript for normal mode
+                teleprompter.textContent = message;
+                teleprompter.style.overflowY = 'auto';
+                teleprompter.style.whiteSpace = 'pre-wrap';
             }
-            teleprompter.textContent = initialBuffer.join('\n');
         }
 
         function updateUIState() {
@@ -377,17 +403,17 @@
                 fsPauseResumeBtn.classList.remove('disabled');
                 languageSelect.disabled = true;
             } else if (isRecognizing && isPaused) {
-                startStopBtn.textContent = 'Stoppa Livetextning';
+                startStopBtn.textContent = 'Stoppa Livetextning'; // Session is active but paused
                 fsStartStopBtn.textContent = 'Stoppa';
                 pauseResumeBtn.textContent = 'Återuppta';
                 fsPauseResumeBtn.textContent = 'Återuppta';
                 pauseResumeBtn.classList.remove('hidden', 'disabled');
                 fsPauseResumeBtn.classList.remove('disabled');
                 languageSelect.disabled = true;
-            } else { 
+            } else { // Stoppad / Inte startad
                 startStopBtn.textContent = 'Starta Livetextning';
                 fsStartStopBtn.textContent = 'Starta';
-                pauseResumeBtn.textContent = 'Pausa';
+                pauseResumeBtn.textContent = 'Pausa'; // Should be hidden/disabled
                 fsPauseResumeBtn.textContent = 'Pausa';
                 pauseResumeBtn.classList.add('hidden'); 
                 fsPauseResumeBtn.classList.add('disabled');
@@ -399,67 +425,104 @@
         startStopBtn.onclick = () => {
             if (!recognition) initializeRecognition(); 
             
-            if (isRecognizing) { // Om den körs, stoppa den
+            if (isRecognizing) { 
                 undergoingControlledStop = true;
-                recognition.stop();
-                isRecognizing = false; // Set state immediately
+                recognition.stop(); // onend will handle UI and state updates
+                isRecognizing = false; 
                 isPaused = false;
-                // onend will handle final display like "Stoppad"
-            } else { // Om den är stoppad, starta den
-                finalizedLines = [];
+                // setInitialTeleprompterMessage('Livetextning stoppad.'); // onend handles this
+            } else { 
+                fullTranscript = ""; // Reset for new session
+                teleprompterDisplayLines = []; // Reset for new session
                 globalInterimTranscript = "";
                 srtEntries = [];
                 srtSegmentIndex = 1;
                 recognitionStartTime = Date.now(); 
+                
                 setInitialTeleprompterMessage('Startar igenkänning...');
                 
                 isRecognizing = true; 
                 isPaused = false;
                 initializeRecognition(); 
-                recognition.start();
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Error starting recognition:", e);
+                    isRecognizing = false; // Revert state if start fails
+                    setInitialTeleprompterMessage("Kunde inte starta igenkänning.");
+                    updateUIState();
+                }
             }
             // updateUIState() is called by onstart/onend
         };
 
         pauseResumeBtn.onclick = () => {
-            if (!isRecognizing && !isPaused) return; 
+            if (!isRecognizing && !isPaused && !startStopBtn.textContent.includes("Stoppa")) {
+                 // Not in an active session at all (e.g. page load, or after full stop)
+                return;
+            }
 
-            if (isPaused) { 
-                isRecognizing = true; 
+            if (isPaused) { // If paused, resume
+                // isRecognizing should be true if paused
                 isPaused = false;
+                setInitialTeleprompterMessage('Återupptar...'); // Provide feedback
                 if (recognition) { 
                      try { initializeRecognition(); recognition.start(); } 
-                     catch (e) { console.warn("Kunde ej starta om recognition", e); recognition = null; initializeRecognition(); recognition.start(); }
+                     catch (e) { 
+                        console.warn("Kunde ej starta om recognition", e); 
+                        recognition = null; initializeRecognition(); recognition.start(); 
+                    }
                 } else { initializeRecognition(); recognition.start(); }
-            } else { // Om den körs, pausa den
-                isPaused = true; // isRecognizing remains true
-                if (recognition) { undergoingControlledStop = true; recognition.stop(); }
+            } else if (isRecognizing) { // If running, pause it
+                isPaused = true; // isRecognizing remains true because it's a pause, not a full stop
+                if (recognition) { 
+                    undergoingControlledStop = true; 
+                    recognition.stop(); 
+                    // onend will handle UI, current text remains
+                    setInitialTeleprompterMessage('Pausad...'); // Give immediate feedback
+                }
             }
-             // updateUIState() is called by onstart/onend
+            // updateUIState() will be called by onstart (if resuming) or onend (if pausing)
         };
         
         fsStartStopBtn.onclick = () => startStopBtn.click();
         fsPauseResumeBtn.onclick = () => pauseResumeBtn.click();
 
         languageSelect.onchange = () => {
-            const shouldRestartAfterLangChange = isRecognizing && !isPaused;
-            if (isRecognizing) { 
+            const wasRunning = isRecognizing && !isPaused;
+            const wasActuallyPaused = isRecognizing && isPaused; // Explicitly paused by user
+
+            if (isRecognizing) { // If there was any active session (running or paused)
                 undergoingControlledStop = true;
+                console.log("Language change: Stopping current recognition.");
                 recognition.stop();
+                // State (isRecognizing, isPaused) will be reset before restart if it was running
+                
                 setTimeout(() => {
-                    if (shouldRestartAfterLangChange) {
-                       finalizedLines = []; globalInterimTranscript = ""; srtEntries = []; srtSegmentIndex = 1; recognitionStartTime = Date.now();
+                    console.log("Language change: Timeout. wasRunning:", wasRunning, "wasActuallyPaused:", wasActuallyPaused);
+                    if (wasRunning) { // If it was actively running, restart it with new lang
+                       fullTranscript = ""; teleprompterDisplayLines = []; globalInterimTranscript = ""; 
+                       srtEntries = []; srtSegmentIndex = 1; recognitionStartTime = Date.now();
                        setInitialTeleprompterMessage('Startar med nytt språk...');
                        isRecognizing = true; isPaused = false;
                        initializeRecognition(); recognition.start();
+                    } else if (wasActuallyPaused) {
+                        // If it was paused by the user, just update the lang for the next resume
+                        // The session is still "active" (isRecognizing=true) but paused (isPaused=true)
+                        isRecognizing = true; isPaused = true;
+                        initializeRecognition(); // Sets new lang
+                        setInitialTeleprompterMessage('Språk ändrat. Återuppta för att fortsätta.');
+                        updateUIState(); // Reflect that it's still paused but ready
                     } else {
-                        isRecognizing = isPaused; 
-                        initializeRecognition(); 
-                        updateUIState(); 
+                        // Was stopped for other reasons or state is inconsistent, just set lang for next manual start
+                         initializeRecognition();
+                         isRecognizing = false; isPaused = false; // Ensure it's fully stopped state
+                         updateUIState();
                     }
-                }, 300);
-            } else { 
-                 if (recognition) recognition.lang = languageSelect.value; else initializeRecognition(); 
+                }, 300); // Delay to allow onend to process fully
+            } else { // Not recognizing, just set lang for next start
+                 if (recognition) recognition.lang = languageSelect.value; 
+                 else initializeRecognition(); 
             }
         };
 
@@ -519,31 +582,54 @@
         fsExitFullscreenBtn.onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); };
 
         document.addEventListener('fullscreenchange', () => {
-            const shouldBeActive = isRecognizing && !isPaused;
-            const wasPaused = isRecognizing && isPaused;
-            if (recognition) { undergoingControlledStop = true; recognition.stop(); }
+            console.log("Fullscreen change event. Current fullscreenElement:", document.fullscreenElement);
+            const wasRunningBeforeToggle = isRecognizing && !isPaused;
+            const wasPausedBeforeToggle = isRecognizing && isPaused;
+
+            if (recognition && isRecognizing) { // Only stop if it was in an active session (running or paused)
+                console.log("Fullscreen change: Stopping current recognition (controlled).");
+                undergoingControlledStop = true; 
+                recognition.stop(); 
+                // isRecognizing and isPaused states will be set correctly before restart
+            }
 
             if (document.fullscreenElement === teleprompterContainer) {
                 mainContainer.classList.add('hidden'); fullscreenControlsStrip.classList.remove('hidden');
                 teleprompter.style.height = '100vh'; 
-                teleprompterContainer.classList.remove('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]','p-0');
-                teleprompter.classList.add('p-8', 'md:p-12'); 
-            } else {
+                teleprompterContainer.classList.remove('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
+                teleprompterContainer.classList.add('p-0'); // Adjust padding for true fullscreen
+                teleprompter.classList.remove('p-6', 'md:p-10'); // Remove old padding
+                teleprompter.classList.add('p-8', 'md:p-12');  // Add new padding for FS
+            } else { // Exiting fullscreen
                 mainContainer.classList.remove('hidden'); fullscreenControlsStrip.classList.add('hidden');
                 teleprompter.style.height = ''; 
                 teleprompterContainer.classList.add('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
                 teleprompterContainer.classList.remove('p-0');
-                teleprompter.classList.remove('p-8', 'md:p-12');
+                teleprompter.classList.remove('p-8', 'md:p-12'); // Remove FS padding
+                teleprompter.classList.add('p-6', 'md:p-10'); // Restore normal padding
             }
+            updateLiveDisplay(); // Update display immediately for new mode styling
 
             setTimeout(() => {
-                if (shouldBeActive) {
-                    isRecognizing = true; isPaused = false; initializeRecognition(); 
-                    try { recognition.start(); } catch (e) { console.error("Fel vid omstart efter helskärm:", e); isRecognizing = false; updateUIState(); }
-                } else if (wasPaused) {
-                    isRecognizing = true; isPaused = true; initializeRecognition(); updateUIState();    
-                } else { isRecognizing = false; isPaused = false; updateUIState(); }
-            }, 300); 
+                console.log("Fullscreen change timeout: wasRunningBeforeToggle:", wasRunningBeforeToggle, "wasPausedBeforeToggle:", wasPausedBeforeToggle);
+                if (wasRunningBeforeToggle) {
+                    console.log("Fullscreen change: Re-initializing and starting recognition because it was running.");
+                    isRecognizing = true; isPaused = false;
+                    initializeRecognition(); 
+                    try { recognition.start(); } 
+                    catch (e) { console.error("Error restarting recognition after fullscreen change:", e); isRecognizing = false; updateUIState(); }
+                } else if (wasPausedBeforeToggle) {
+                    console.log("Fullscreen change: Was paused. Setting state and initializing for resume.");
+                    isRecognizing = true; isPaused = true;    
+                    initializeRecognition(); 
+                    updateUIState(); // Reflects that it's paused and ready for resume
+                } else { // Was fully stopped or in an initial state
+                    console.log("Fullscreen change: Was not running or paused. Ensuring stopped state.");
+                    isRecognizing = false; isPaused = false;
+                    updateUIState();
+                }
+                 // onstart or onend (from the stop above) will also call updateUIState.
+            }, 350); // Slightly increased delay to ensure DOM and recognition stop are fully processed.
         });
 
         let qrCodeInstance = null;
@@ -558,7 +644,7 @@
         qrModal.onclick = (event) => { if (event.target === qrModal) qrModal.classList.add('hidden'); };
 
         // Initial setup
-        setInitialTeleprompterMessage('Väntar på start...');
+        setInitialTeleprompterMessage('Väntar på start...'); // Uses normal view by default
         updateUIState();
         updateTeleprompterStyle(); 
 
