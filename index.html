@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIVE TEXT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Byt ut 'Inter' om det inte är tillgängligt via Tailwind CDN */
+        }
+        .neobrutalist-button {
+            border: 2px solid white;
+            padding: 0.75rem 1.5rem; /* 12px 24px */
+            font-weight: bold;
+            color: white;
+            background-color: black;
+            box-shadow: 4px 4px 0px 0px rgba(255,255,255,0.7);
+            transition: all 0.15s ease-out;
+            text-transform: uppercase;
+        }
+        .neobrutalist-button:hover {
+            background-color: #33ff00; /* Ljusgrön accent */
+            color: black;
+            box-shadow: 2px 2px 0px 0px rgba(255,255,255,0.7);
+            transform: translate(2px, 2px);
+        }
+        .neobrutalist-button:active {
+            box-shadow: 1px 1px 0px 0px rgba(255,255,255,0.7);
+            transform: translate(3px, 3px);
+        }
+        .neobrutalist-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: 2px 2px 0px 0px rgba(128,128,128,0.7);
+            transform: none;
+            background-color: #333;
+            color: #888;
+        }
+        .neobrutalist-input, .neobrutalist-select, .neobrutalist-textarea {
+            background-color: black;
+            border: 2px solid white;
+            padding: 0.75rem;
+            color: white;
+            width: 100%;
+            box-shadow: 3px 3px 0px 0px rgba(255,255,255,0.5);
+        }
+        .neobrutalist-input:focus, .neobrutalist-select:focus, .neobrutalist-textarea:focus {
+            outline: none;
+            border-color: #33ff00; /* Ljusgrön accent */
+            box-shadow: 1px 1px 0px 0px #33ff00;
+        }
+        #teleprompter {
+            font-family: 'Menlo', 'Monaco', 'Consolas', "Courier New", monospace; /* Monospace för teleprompter */
+            line-height: 1.3; /* Justerat radavstånd för läsbarhet */
+            overflow-wrap: break-word;
+            word-wrap: break-word; /* För äldre webbläsare */
+            hyphens: auto; /* Kan hjälpa till med avstavning på vissa språk */
+        }
+        .fullscreen-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8);
+            padding: 10px;
+            border: 2px solid white;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+            z-index: 2147483647; /* Högsta z-index */
+            display: flex;
+            gap: 10px;
+        }
+        /* Specifik stil för QR-kod modal */
+        #qrModalContent {
+             background-color: #1a1a1a; /* Mörkare grå för modalen */
+             border: 2px solid #33ff00; /* Accentfärg för ramen */
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col selection:bg-[#33ff00] selection:text-black">
+
+    <div id="main-container" class="container mx-auto p-4 flex flex-col flex-grow">
+        <header class="mb-6 text-center">
+            <h1 class="text-5xl font-bold tracking-tighter">LIVE TEXT</h1>
+            <p class="text-sm text-gray-400 mt-1">Direkttextning i din webbläsare</p>
+        </header>
+
+        <!-- Kontrollpanel -->
+        <div id="controls-panel" class="mb-6 p-4 border-2 border-gray-700 shadow-[6px_6px_0px_0px_rgba(100,100,100,0.7)]">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Språk och Start/Stopp -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="language-select" class="block mb-1 text-sm font-medium">Språk:</label>
+                        <select id="language-select" class="neobrutalist-select">
+                            <option value="sv-SE">Svenska</option>
+                            <option value="en-US">Engelska (US)</option>
+                            <option value="da-DK">Danska</option>
+                            <option value="nb-NO">Norska (Bokmål)</option>
+                            <option value="is-IS">Isländska</option>
+                            <option value="fi-FI">Finska</option>
+                            <option value="fr-FR">Franska</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="start-stop-btn" class="neobrutalist-button flex-grow">Starta Livetextning</button>
+                        <button id="pause-resume-btn" class_disabled="neobrutalist-button flex-grow hidden">Pausa</button>
+                    </div>
+                     <button id="fullscreen-btn" class="neobrutalist-button w-full">Helskärm Teleprompter</button>
+                </div>
+
+                <!-- Textinställningar -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium">Textstorlek:</label>
+                        <div class="flex space-x-2">
+                            <button id="decrease-text-size" class="neobrutalist-button text-sm px-3 py-1">-</button>
+                            <button id="increase-text-size" class="neobrutalist-button text-sm px-3 py-1">+</button>
+                            <input type="number" id="text-size-input" value="48" class="neobrutalist-input !w-20 text-center" title="Aktuell textstorlek (px)">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium">Textfärg:</label>
+                         <div class="flex space-x-2">
+                            <input type="color" id="text-color-picker" value="#FFFFFF" class="neobrutalist-input !p-1 !w-16 h-10">
+                            <span id="text-color-value" class="self-center">#FFFFFF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Avancerade inställningar -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="custom-words" class="block mb-1 text-sm font-medium">Vanliga ord/namn (ett per rad):</label>
+                        <textarea id="custom-words" rows="2" class="neobrutalist-textarea" placeholder="t.ex. Produktnamn X, Konferens Y"></textarea>
+                    </div>
+                    <div>
+                        <label for="script-paste" class="block mb-1 text-sm font-medium">Klistra in manus här:</label>
+                        <textarea id="script-paste" rows="2" class="neobrutalist-textarea" placeholder="Ditt manus..."></textarea>
+                         <p class="text-xs text-gray-500 mt-1">Notera: Innehållet i "Vanliga ord" och "Manus" används primärt för din referens. Web Speech API:s förmåga att aktivt använda dessa för förbättrad igenkänning är begränsad och webbläsarberoende.</p>
+                    </div>
+                </div>
+            </div>
+             <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                <button id="download-srt-btn" class="neobrutalist-button disabled">Ladda ner .srt</button>
+                <button id="share-btn" class="neobrutalist-button">Dela Länk/QR</button>
+            </div>
+        </div>
+
+        <!-- Teleprompter -->
+        <div id="teleprompter-container" class="flex-grow flex flex-col bg-black border-2 border-gray-600 shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]">
+            <div id="teleprompter" class="w-full flex-grow p-6 md:p-10 text-5xl text-white overflow-y-auto leading-tight">
+                Väntar på start...
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullskärmskontroller (dolda initialt) -->
+    <div id="fullscreen-controls-strip" class="fullscreen-controls hidden">
+        <button id="fs-start-stop-btn" class="neobrutalist-button text-xs">Start</button>
+        <button id="fs-pause-resume-btn" class="neobrutalist-button text-xs">Paus</button>
+        <button id="fs-decrease-text-size" class="neobrutalist-button text-xs">-</button>
+        <span id="fs-text-size-display" class="text-white self-center text-xs">48px</span>
+        <button id="fs-increase-text-size" class="neobrutalist-button text-xs">+</button>
+        <input type="color" id="fs-text-color-picker" value="#FFFFFF" class="neobrutalist-input !p-0 !w-8 !h-8 !border-0">
+        <button id="fs-exit-fullscreen-btn" class="neobrutalist-button text-xs">Avsluta helskärm</button>
+    </div>
+
+    <!-- Modal för QR-kod/Länk -->
+    <div id="qrModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden p-4">
+        <div id="qrModalContent" class="bg-black p-6 border-2 border-white shadow-[6px_6px_0px_0px_rgba(50,205,50,0.7)] w-full max-w-md text-center">
+            <h3 class="text-2xl font-bold mb-4 text-[#33ff00]">Dela Livetextning</h3>
+            <p class="mb-2 text-gray-300">Dela denna länk eller skanna QR-koden:</p>
+            <input type="text" id="shareable-link" readonly class="neobrutalist-input mb-4 text-center">
+            <div id="qrcode-display" class="flex justify-center mb-4 bg-white p-2 border-2 border-white inline-block shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]"></div>
+            <button id="close-qr-modal" class="neobrutalist-button mt-2">Stäng</button>
+        </div>
+    </div>
+
+
+    <script>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const pauseResumeBtn = document.getElementById('pause-resume-btn');
+        const languageSelect = document.getElementById('language-select');
+        const teleprompter = document.getElementById('teleprompter');
+        const downloadSrtBtn = document.getElementById('download-srt-btn');
+        
+        const increaseTextSizeBtn = document.getElementById('increase-text-size');
+        const decreaseTextSizeBtn = document.getElementById('decrease-text-size');
+        const textColorPicker = document.getElementById('text-color-picker');
+        const textColorValue = document.getElementById('text-color-value');
+        const textSizeInput = document.getElementById('text-size-input');
+
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const teleprompterContainer = document.getElementById('teleprompter-container');
+        const controlsPanel = document.getElementById('controls-panel');
+        const mainContainer = document.getElementById('main-container');
+        
+        const fullscreenControlsStrip = document.getElementById('fullscreen-controls-strip');
+        const fsStartStopBtn = document.getElementById('fs-start-stop-btn');
+        const fsPauseResumeBtn = document.getElementById('fs-pause-resume-btn');
+        const fsIncreaseTextSizeBtn = document.getElementById('fs-increase-text-size');
+        const fsDecreaseTextSizeBtn = document.getElementById('fs-decrease-text-size');
+        const fsTextColorPicker = document.getElementById('fs-text-color-picker');
+        const fsTextSizeDisplay = document.getElementById('fs-text-size-display');
+        const fsExitFullscreenBtn = document.getElementById('fs-exit-fullscreen-btn');
+
+        const shareBtn = document.getElementById('share-btn');
+        const qrModal = document.getElementById('qrModal');
+        const closeQrModalBtn = document.getElementById('close-qr-modal');
+        const shareableLinkInput = document.getElementById('shareable-link');
+        const qrcodeDisplay = document.getElementById('qrcode-display');
+        
+        let isRecognizing = false;
+        let isPaused = false;
+        let currentTranscript = '';
+        let interimTranscript = '';
+        let srtEntries = [];
+        let srtSegmentIndex = 1;
+        let recognitionStartTime = 0;
+        let currentFontSize = 48;
+
+        if (!SpeechRecognition) {
+            teleprompter.textContent = 'Web Speech API stöds inte i denna webbläsare. Prova Chrome eller Edge.';
+            startStopBtn.classList.add('disabled');
+            pauseResumeBtn.classList.add('disabled');
+        } else {
+            recognition = new SpeechRecognition();
+        }
+
+        function initializeRecognition() {
+            if (!recognition) recognition = new SpeechRecognition();
+            recognition.lang = languageSelect.value;
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                console.log('Taligenkänning startad');
+                isRecognizing = true;
+                isPaused = false;
+                if (srtEntries.length === 0) { // Bara vid första start av en session
+                    recognitionStartTime = Date.now();
+                }
+                updateUIState();
+            };
+
+            recognition.onresult = (event) => {
+                interimTranscript = '';
+                let finalTranscriptForSegment = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscriptForSegment += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                
+                teleprompter.textContent = currentTranscript + finalTranscriptForSegment + interimTranscript;
+                teleprompter.scrollTop = teleprompter.scrollHeight; // Auto-scroll
+
+                if (finalTranscriptForSegment.trim() !== '') {
+                    const segmentText = finalTranscriptForSegment.trim();
+                    const segmentStartTimeMs = srtEntries.length > 0 ? srtEntries[srtEntries.length - 1].endMs : 0;
+                    const segmentEndTimeMs = Date.now() - recognitionStartTime;
+                    
+                    srtEntries.push({
+                        index: srtSegmentIndex++,
+                        start: formatSrtTime(segmentStartTimeMs),
+                        end: formatSrtTime(segmentEndTimeMs),
+                        text: segmentText
+                    });
+                    currentTranscript += finalTranscriptForSegment; // Lägg till det finaliserade till huvudtranskriptet
+                    downloadSrtBtn.classList.remove('disabled');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Taligenkänningsfel:', event.error);
+                if (event.error === 'no-speech') {
+                    teleprompter.textContent = currentTranscript + "\n(Inget tal uppfattades, försök igen)";
+                } else if (event.error === 'audio-capture') {
+                     teleprompter.textContent = currentTranscript + "\n(Problem med mikrofonen. Kontrollera inställningar.)";
+                } else if (event.error === 'not-allowed') {
+                    teleprompter.textContent = currentTranscript + "\n(Åtkomst till mikrofon nekad. Tillåt i webbläsarens inställningar.)";
+                } else {
+                    teleprompter.textContent = currentTranscript + `\n(Fel: ${event.error})`;
+                }
+                isRecognizing = false; // Stoppa om det är ett kritiskt fel
+                updateUIState();
+            };
+
+            recognition.onend = () => {
+                console.log('Taligenkänning avslutad.');
+                 // Om igenkänningen avslutas och vi inte har pausat manuellt,
+                 // och vi fortfarande vill vara i igenkänningsläge (t.ex. efter ett kort avbrott),
+                 // kan vi starta om den här. För nu, låt användaren starta om manuellt.
+                if (isRecognizing && !isPaused) { // Om det stoppades oväntat, försök starta om
+                    // Detta kan leda till loopar om felet är persistent. Bättre att låta användaren hantera.
+                    // recognition.start();
+                    // console.log("Försöker starta om igenkänning...");
+                    isRecognizing = false; // Markera som stoppad så användaren kan starta igen
+                } else if (!isRecognizing && !isPaused) { // Manuell stopp
+                     // Gör inget, användaren har stoppat.
+                }
+                updateUIState();
+            };
+        }
+        
+        function updateUIState() {
+            if (isRecognizing && !isPaused) {
+                startStopBtn.textContent = 'Stoppa Livetextning';
+                fsStartStopBtn.textContent = 'Stoppa';
+                pauseResumeBtn.textContent = 'Pausa';
+                fsPauseResumeBtn.textContent = 'Pausa';
+                pauseResumeBtn.classList.remove('hidden', 'disabled');
+                fsPauseResumeBtn.classList.remove('disabled');
+                languageSelect.disabled = true;
+            } else if (isRecognizing && isPaused) {
+                startStopBtn.textContent = 'Stoppa Livetextning'; // Fortfarande aktiv session
+                fsStartStopBtn.textContent = 'Stoppa';
+                pauseResumeBtn.textContent = 'Återuppta';
+                fsPauseResumeBtn.textContent = 'Återuppta';
+                pauseResumeBtn.classList.remove('hidden', 'disabled');
+                fsPauseResumeBtn.classList.remove('disabled');
+                languageSelect.disabled = true;
+            } else { // Stoppad / Inte startad
+                startStopBtn.textContent = 'Starta Livetextning';
+                fsStartStopBtn.textContent = 'Starta';
+                pauseResumeBtn.textContent = 'Pausa';
+                fsPauseResumeBtn.textContent = 'Pausa';
+                pauseResumeBtn.classList.add('hidden'); // Eller disabled beroende på designval
+                fsPauseResumeBtn.classList.add('disabled');
+                languageSelect.disabled = false;
+            }
+            downloadSrtBtn.classList.toggle('disabled', srtEntries.length === 0);
+        }
+
+        startStopBtn.onclick = () => {
+            if (!recognition) initializeRecognition(); // Säkerställ att recognition är initialiserad
+            if (isRecognizing) { // Om den körs, stoppa den (avsluta session)
+                recognition.stop();
+                isRecognizing = false;
+                isPaused = false;
+                // currentTranscript och srtEntries nollställs inte här,
+                // det görs när en NY session startas.
+            } else { // Om den är stoppad, starta den (ny session)
+                currentTranscript = '';
+                interimTranscript = '';
+                srtEntries = [];
+                srtSegmentIndex = 1;
+                teleprompter.textContent = 'Startar igenkänning...';
+                initializeRecognition(); // Applicera språk etc.
+                recognition.start();
+            }
+            updateUIState();
+        };
+
+        pauseResumeBtn.onclick = () => {
+            if (!isRecognizing) return;
+
+            if (isPaused) { // Om pausad, återuppta
+                isPaused = false;
+                if (recognition) { // Om recognition objektet fortfarande finns och kan startas om (vissa webbläsare kan)
+                     try {
+                        initializeRecognition(); // Re-init för att vara säker på inställningar
+                        recognition.start();
+                     } catch (e) {
+                        console.warn("Kunde inte starta om befintlig recognition, skapar ny.", e);
+                        recognition = null; // Tvinga ny instans
+                        initializeRecognition();
+                        recognition.start();
+                     }
+                } else { // Om recognition är null, skapa och starta ny.
+                    initializeRecognition();
+                    recognition.start();
+                }
+            } else { // Om den körs, pausa den
+                isPaused = true;
+                if (recognition) {
+                    recognition.stop(); // onend kommer att hantera isRecognizing status om det behövs
+                }
+            }
+            updateUIState();
+        };
+        
+        // Synka fullskärmsknappar med huvudknappar
+        fsStartStopBtn.onclick = () => startStopBtn.click();
+        fsPauseResumeBtn.onclick = () => pauseResumeBtn.click();
+
+
+        languageSelect.onchange = () => {
+            if (isRecognizing) { // Om igenkänning pågår, stoppa och starta om med nytt språk
+                recognition.stop(); // onend kommer att triggas
+                // Vänta en kort stund för att onend ska slutföras innan ny start
+                setTimeout(() => {
+                    if (isRecognizing && !isPaused) { // Om den fortfarande skulle vara aktiv (vilket den inte borde vara efter stop)
+                       currentTranscript = ''; // Nollställ för nytt språk
+                       srtEntries = [];
+                       srtSegmentIndex = 1;
+                       teleprompter.textContent = 'Startar med nytt språk...';
+                       initializeRecognition();
+                       recognition.start();
+                    } else { // Om den stoppades korrekt, sätt bara flaggan så nästa start använder nytt språk
+                        initializeRecognition(); // Uppdatera config för nästa start
+                    }
+                }, 250);
+            } else {
+                 if (recognition) recognition.lang = languageSelect.value; // Uppdatera för nästa start
+                 else initializeRecognition(); // Om recognition inte finns än
+            }
+        };
+
+        // Text style controls
+        function updateTeleprompterStyle() {
+            teleprompter.style.fontSize = `${currentFontSize}px`;
+            teleprompter.style.color = textColorPicker.value;
+            fsTextColorPicker.value = textColorPicker.value; // Synka fullskärmspickern
+            textSizeInput.value = currentFontSize;
+            fsTextSizeDisplay.textContent = `${currentFontSize}px`;
+        }
+
+        increaseTextSizeBtn.onclick = () => { currentFontSize = Math.min(120, currentFontSize + 2); updateTeleprompterStyle(); };
+        decreaseTextSizeBtn.onclick = () => { currentFontSize = Math.max(16, currentFontSize - 2); updateTeleprompterStyle(); };
+        textSizeInput.onchange = (e) => {
+            const newSize = parseInt(e.target.value);
+            if (!isNaN(newSize) && newSize >=16 && newSize <= 120) {
+                currentFontSize = newSize;
+                updateTeleprompterStyle();
+            } else {
+                e.target.value = currentFontSize; // Återställ om ogiltigt
+            }
+        };
+        textSizeInput.onblur = (e) => { // Säkerställ att värdet återställs om det lämnas ogiltigt
+             const newSize = parseInt(e.target.value);
+            if (isNaN(newSize) || newSize < 16 || newSize > 120) {
+                e.target.value = currentFontSize;
+            }
+        }
+
+
+        textColorPicker.oninput = () => { 
+            updateTeleprompterStyle();
+            textColorValue.textContent = textColorPicker.value.toUpperCase();
+        };
+        
+        fsIncreaseTextSizeBtn.onclick = () => increaseTextSizeBtn.click();
+        fsDecreaseTextSizeBtn.onclick = () => decreaseTextSizeBtn.click();
+        fsTextColorPicker.oninput = () => {
+            textColorPicker.value = fsTextColorPicker.value;
+            updateTeleprompterStyle();
+            textColorValue.textContent = textColorPicker.value.toUpperCase();
+        };
+
+
+        // SRT Download
+        function formatSrtTime(milliseconds) {
+            let seconds = Math.floor(milliseconds / 1000);
+            let minutes = Math.floor(seconds / 60);
+            let hours = Math.floor(minutes / 60);
+            let ms = Math.floor(milliseconds % 1000);
+
+            seconds = seconds % 60;
+            minutes = minutes % 60;
+
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+        }
+
+        downloadSrtBtn.onclick = () => {
+            if (srtEntries.length === 0) return;
+
+            const srtContent = srtEntries.map(entry => 
+                `${entry.index}\n${entry.start} --> ${entry.end}\n${entry.text}\n`
+            ).join('\n');
+
+            const blob = new Blob([srtContent], { type: 'text/srt;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().slice(0, 16).replace(/[-T:]/g, '');
+            a.download = `livetext_${timestamp}.srt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // Fullscreen logic
+        fullscreenBtn.onclick = () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                teleprompterContainer.requestFullscreen().catch(err => {
+                    alert(`Kunde inte starta helskärmsläge: ${err.message} (${err.name})`);
+                });
+            }
+        };
+        
+        fsExitFullscreenBtn.onclick = () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement === teleprompterContainer) {
+                mainContainer.classList.add('hidden'); // Göm huvudlayouten
+                fullscreenControlsStrip.classList.remove('hidden');
+                // Försök att tvinga fram en omritning om texten inte fyller ut
+                teleprompter.style.height = '100vh'; 
+                teleprompterContainer.classList.remove('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
+                teleprompterContainer.classList.add('p-0'); // Ta bort padding från container i FS
+                teleprompter.classList.add('p-8', 'md:p-12'); // Lägg till padding direkt på teleprompter-elementet
+            } else {
+                mainContainer.classList.remove('hidden');
+                fullscreenControlsStrip.classList.add('hidden');
+                teleprompter.style.height = ''; // Återställ
+                teleprompterContainer.classList.add('border-2', 'border-gray-600', 'shadow-[8px_8px_0px_0px_rgba(50,50,50,0.7)]');
+                teleprompterContainer.classList.remove('p-0');
+                teleprompter.classList.remove('p-8', 'md:p-12');
+            }
+            updateUIState(); // Uppdatera knapptexter i fs-kontroller
+        });
+
+        // Share modal
+        let qrCodeInstance = null;
+        shareBtn.onclick = () => {
+            const currentUrl = window.location.href;
+            shareableLinkInput.value = currentUrl;
+            
+            qrcodeDisplay.innerHTML = ''; // Rensa tidigare QR-kod
+            qrCodeInstance = new QRCode(qrcodeDisplay, {
+                text: currentUrl,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            qrModal.classList.remove('hidden');
+        };
+
+        closeQrModalBtn.onclick = () => {
+            qrModal.classList.add('hidden');
+        };
+        // Klicka utanför modalen för att stänga
+        qrModal.onclick = (event) => {
+            if (event.target === qrModal) {
+                qrModal.classList.add('hidden');
+            }
+        };
+
+
+        // Initial UI setup
+        updateUIState();
+        updateTeleprompterStyle(); // Sätt initial textstorlek och färg
+
+        // Lyssna efter ändringar i text input för storlek
+        textSizeInput.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val) && val >= 10 && val <= 120) {
+                currentFontSize = val;
+                 updateTeleprompterStyle();
+            }
+        });
+         textSizeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const val = parseInt(e.target.value);
+                 if (!isNaN(val) && val >= 10 && val <= 120) {
+                    currentFontSize = val;
+                    updateTeleprompterStyle();
+                } else {
+                    textSizeInput.value = currentFontSize; // Återställ om ogiltigt
+                }
+            }
+        });
+
+
+    </script>
+</body>
+</html>
