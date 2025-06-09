@@ -1,66 +1,51 @@
-Live text Irl är en webbaserad app för realtids‑textning. Den använder Tailwind CSS och har en tydlig “neobrutalist” stil. Taligenkänningen bygger på Web Speech API, vilket kontrolleras direkt i början av skriptet där SpeechRecognition initieras.
+Teknisk översikt av index.html
 
-Grundläggande kontroller
-I kontrollpanelen kan användaren välja språk och starta, pausa eller stoppa textningen. Följande språk finns förvalda:
+HTML‑filen är en fristående webbapp för tal‑till‑text. Den innehåller både layout, stil och logik.
 
-<option value="sv-SE">Svenska</option>
-<option value="en-US">Engelska (US)</option>
-<option value="da-DK">Danska</option>
-<option value="nb-NO">Norska (Bokmål)</option>
-<option value="is-IS">Isländska</option>
-<option value="fi-FI">Finska</option>
-<option value="fr-FR">Franska</option>
+Gränssnitt och stil
+Grundtemat definieras i CSS med variabler för färger och typsnitt, t.ex. svart bakgrund och vitt textfärg
 
-Start‑/stopp‑knappen och pausknappen definieras direkt efter språkvalet
+Resultatet visas i #output-container och får särskild hantering i helskärmsläge (teleprompter-mode) där texten visas större och scrollar uppåt
 
-Textinställningar och avancerade val
-Användaren kan ändra textstorlek och färg via knappar, ett numeriskt fält samt en färgväljare. Under “Avancerade inställningar” går det att ange egna ord eller klistra in ett manus. En kommentar förklarar dock att Web Speech API bara i begränsad utsträckning kan dra nytta av dessa fält.
+Grundkontroller
+Användaren väljer språk (svenska, engelska (US), danska eller norska) via en select
 
-Nedladdning av undertextfil
-Det går att ladda ned transkriptionen som SRT. När användaren klickar på knappen genereras filen via JavaScript. Exempel:
+En knapp startar eller stoppar textningen, medan en annan öppnar helskärmsläge (teleprompter)
 
-downloadSrtBtn.onclick = () => {
-    if (srtEntries.length === 0) return;
-    const srtContent = srtEntries.map(entry => `${entry.index}\n${entry.start} --> ${entry.end}\n${entry.text}\n`).join('\n');
-    const blob = new Blob([srtContent], { type: 'text/srt;charset=utf-8' });
-    ...
-    a.download = `livetext_${timestamp}.srt`;
-}
+Anpassningar av texten
+Fontstorlek kan ändras med +/-‑knappar och aktuell storlek visas i #font-size-display
 
-Fullskärmsläge och teleprompter
-Texten visas i ett “teleprompter”-element. Ett särskilt knappfält gör att man kan gå in i helskärmsläge och justera storlek och färg även där. Vid övergångar till och från helskärm stoppas och startas taligenkänningen automatiskt så att sessionen fortsätter utan problem.
+Färg väljs med ett färgfält, vilket uppdaterar textfärgen i output-fältet i realtid
 
-Delning via länk och QR‑kod
-Användaren kan dela sin session med en länk eller QR‑kod. Ett klick på “Dela Länk/QR” visar en modal med en genererad QR‑kod:
+Stöd för egna ord och manus
+Under “Vanliga ord/namn” kan användaren ange ord eller namn som bör kännas igen bättre. Inmatade rader används när transkripten skrivs ut via funktionen applyVocabulary
 
-shareBtn.onclick = () => {
-    const currentUrl = window.location.href;
-    shareableLinkInput.value = currentUrl;
-    qrcodeDisplay.innerHTML = '';
-    qrCodeInstance = new QRCode(qrcodeDisplay, { text: currentUrl, width: 200, height: 200, colorDark : "#000000", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
-    qrModal.classList.remove('hidden');
-};
+Nedladdning och delning
+Knappen “Ladda ner .SRT” skapar en undertextfil utifrån talet och hämtar den lokalt
 
-Felhantering
-Eventuella fel under taligenkänningen eller vid helskärmsförsök visas i ett särskilt felmodalfönster. Modalens HTML och hjälpfunktioner finns i filen.
+Med “Dela Länk/QR” visas en modal med en QR‑kod som pekar på aktuell URL
 
-Initiering
-Vid sidladdning visas meddelandet “Väntar på start...” och knapparnas tillstånd uppdateras beroende på om igenkänningen är aktiv, pausad eller stoppad.
+Taligenkänning
+Web Speech API används för igenkänningen: SpeechRecognition initieras och startas/stoppas via knapparna
 
-Sammanfattningsvis erbjuder appen möjlighet att:
+Slutlig text och interimresultat hanteras i onresult, där även tidsstämplar samlas för SRT-export
 
-starta, pausa och stoppa taligenkänning direkt i webbläsaren
+Helskärmsläge (teleprompter)
+När teleprompter-knappen klickas begärs helskärm och en särskild klass ger uppåtrullande text. Vid avslutat helskärm återställs läget
 
-välja igenkänningsspråk
+Initiering och fel
+Vid sidladdning står texten “Väntar på start...” tills användaren startar igenkänningen
 
-ändra textstorlek och färg
+En enkel felhantering visar alert om taligenkänningen inte stöds eller om helskärmsförfrågan misslyckas
 
-visa texten i helskärm med separata kontroller
+Sammanfattningsvis erbjuder den uppdaterade index.html:
 
-ladda ned textningen som SRT-fil
+- Tal-till-text direkt i webbläsaren via Web Speech API
+- Val av igenkänningsspråk
+- Justerbar textstorlek och textfärg
+- Möjlighet att lägga till egna ord/manus
+- Helskärmsläge med teleprompterfunktion
+- Export av transkription som SRT-fil
+- Delning via länk och QR-kod
 
-dela sessionen via länk eller QR-kod
-
-hantera fel på ett tydligt sätt
-
-All funktionalitet hanteras i en enda HTML-fil med inbäddad JavaScript‑kod och kräver ingen server. Applikationen fungerar bäst i webbläsare som stödjer Web Speech API, exempelvis Chrome eller Edge.
+All logik ligger i en enda HTML-fil och ingen server krävs för att köra appen.
