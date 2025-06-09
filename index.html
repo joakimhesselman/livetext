@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIVE TEXT</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #FFFFFF;
+            --border-color-outer: #555555;
+            --border-color-inner: #FFFFFF;
+            --font-family: 'Inter', 'Helvetica Neue', sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bordered-box {
+            border: 1px solid var(--border-color-outer);
+            box-shadow: inset 0 0 0 1px var(--border-color-inner);
+            background-color: var(--bg-color);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            font-size: 1rem;
+            margin: 0.5rem 0 0 0;
+            color: #AAAAAA;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .controls-container {
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .grid-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        
+        .grid-item .note {
+            font-size: 0.8rem;
+            color: #AAAAAA;
+            margin-top: 1rem;
+            line-height: 1.4;
+        }
+
+        .btn, select, textarea {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: left;
+        }
+        
+        textarea {
+            text-transform: none;
+            resize: vertical;
+            min-height: 90px;
+        }
+        
+        select {
+             appearance: none;
+             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+             background-repeat: no-repeat;
+             background-position: right 1rem center;
+             background-size: 1em;
+             padding-right: 2.5rem;
+        }
+
+        .btn {
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color-outer);
+            box-shadow: inset 0 0 0 1px var(--border-color-inner);
+        }
+
+        .font-size-control button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            background: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+        .font-size-control button:hover {
+            background: #333;
+        }
+        .font-size-display {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0 1rem;
+        }
+
+        .color-picker-wrapper {
+            position: relative;
+            margin-top: 1.5rem;
+        }
+        .color-picker-wrapper input[type="color"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .color-picker-display {
+            width: 100%;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .bottom-buttons {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color-outer);
+        }
+
+        #output-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 40vh;
+            padding: 2rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.4;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- TELEPROMPTER FULLSCREEN STYLES --- */
+        #output-container:fullscreen {
+            height: 100%;
+            font-size: 5vw;
+            justify-content: flex-end; /* Key for starting at the bottom */
+        }
+        
+        #output-container.teleprompter-mode {
+             flex-direction: column-reverse; /* Key for upward scroll */
+             overflow: hidden;
+        }
+
+        /* FIX: Make interim text fully opaque */
+        #output-container .interim {
+            opacity: 1; 
+        }
+
+        /* --- MODAL FOR QR CODE --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: black;
+            padding: 2rem;
+            text-align: center;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content canvas { border: 5px solid white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LIVE TEXT</h1>
+        <p>Direkttextning i din webbläsare. Nödvändigt för vissa, men användbart för alla.</p>
+    </header>
+
+    <div class="main-container">
+        <div class="controls-container bordered-box">
+            <div class="controls-grid">
+                <div class="grid-item">
+                    <label for="language">Språk:</label>
+                    <select id="language" class="bordered-box">
+                        <option value="sv-SE" selected>Svenska</option>
+                        <option value="en-US">Engelska (US)</option>
+                        <option value="da-DK">Danska</option>
+                        <option value="nb-NO">Norska (Bokmål)</option>
+                    </select>
+                    <div class="action-buttons">
+                        <button id="startButton" class="btn bordered-box">Starta Livetextning</button>
+                        <button id="teleprompterButton" class="btn bordered-box">Helskärm Teleprompter</button>
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <label>Textstorlek:</label>
+                    <div class="font-size-control">
+                        <button id="font-dec">-</button>
+                        <div id="font-size-display" class="font-size-display">48</div>
+                        <button id="font-inc">+</button>
+                    </div>
+                    <div class="color-picker-wrapper">
+                         <label style="margin-top: 1.5rem;">Textfärg:</label>
+                         <div class="color-picker-display bordered-box" id="color-display" style="background-color: #FFFFFF;"></div>
+                         <input type="color" id="color-picker" value="#FFFFFF">
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
+                    <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Produktnamn X, Konferens Y"></textarea>
+                    <label for="manus" style="margin-top: 1.5rem;">Klistra in manus här:</label>
+                    <textarea id="manus" class="bordered-box" placeholder="Ditt manus..."></textarea>
+                    <p class="note">Notera: Innehållet i "Vanliga ord" och "Manus" används primärt för din referens. Web Speech API:s förmåga att aktivt använda dessa för förbättrad igenkänning är begränsad och webbläsarberoende.</p>
+                </div>
+            </div>
+            <div class="bottom-buttons">
+                <button id="saveButton" class="btn bordered-box">Ladda ner .SRT</button>
+                <button id="shareButton" class="btn bordered-box">Dela Länk/QR</button>
+            </div>
+        </div>
+
+        <div id="output-container" class="bordered-box">
+            <p>Väntar på start...</p>
+        </div>
+    </div>
+    
+    <div id="qrModal" class="modal-overlay">
+        <div class="modal-content bordered-box">
+            <h3>Dela länk till detta verktyg</h3>
+            <div id="qr-code-container"></div>
+            <button id="closeModal" class="btn bordered-box" style="margin-top: 1.5rem; width: 100%;">Stäng</button>
+        </div>
+    </div>
+
+    <script>
+    // Robust logic from previous version, adapted for the new UI
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // --- DOM Elements ---
+    const startButton = document.getElementById('startButton');
+    const teleprompterButton = document.getElementById('teleprompterButton');
+    const saveButton = document.getElementById('saveButton');
+    const shareButton = document.getElementById('shareButton');
+    const languageSelect = document.getElementById('language');
+    const outputContainer = document.getElementById('output-container');
+    const vocabularyTextarea = document.getElementById('vocabulary');
+    
+    // Font and Color controls
+    const fontIncBtn = document.getElementById('font-inc');
+    const fontDecBtn = document.getElementById('font-dec');
+    const fontSizeDisplay = document.getElementById('font-size-display');
+    const colorPicker = document.getElementById('color-picker');
+    const colorDisplay = document.getElementById('color-display');
+    
+    // Modal controls
+    const qrModal = document.getElementById('qrModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    
+    // State
+    let recognition;
+    let isManuallyStopped = true;
+    let transcriptSegments = [];
+    let transcriptStartTime = null;
+    let customVocabulary = [];
+    let currentFontSize = 48;
+
+    if (!SpeechRecognition) {
+        alert("Web Speech API stöds inte av denna webbläsare. Prova Google Chrome.");
+        startButton.disabled = true;
+    }
+
+    // --- Main Functions ---
+    function setupRecognition() {
+        recognition = new SpeechRecognition();
+        recognition.lang = languageSelect.value;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            isManuallyStopped = false;
+            startButton.textContent = 'Stoppa Livetextning';
+            if (outputContainer.textContent.includes('Väntar på start...')) {
+                outputContainer.innerHTML = '';
+            }
+        };
+
+        recognition.onend = () => {
+            if (!isManuallyStopped) {
+                console.log('Recognition session ended, restarting automatically.');
+                recognition.start();
+            }
+        };
+        
+        recognition.onerror = (event) => {
+            console.error("Speech Recognition Error:", event.error);
+            // Keeping error handling simple for this version, but robust logic can be re-added
+        };
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            
+            // Clear previous interim results to avoid duplication
+            const existingInterim = outputContainer.querySelector('.interim');
+            if(existingInterim) existingInterim.remove();
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcriptPart = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcriptPart + ' ';
+                } else {
+                    interimTranscript += transcriptPart;
+                }
+            }
+
+            if (finalTranscript) {
+                const finalP = document.createElement('p');
+                finalP.textContent = applyVocabulary(finalTranscript);
+                outputContainer.appendChild(finalP);
+                 const segmentTime = new Date();
+                if (!transcriptStartTime) transcriptStartTime = segmentTime;
+                transcriptSegments.push({
+                    text: applyVocabulary(finalTranscript.trim()),
+                    startTime: transcriptStartTime,
+                    endTime: segmentTime
+                });
+                transcriptStartTime = segmentTime;
+            }
+            if (interimTranscript) {
+                 const interimP = document.createElement('p');
+                 interimP.classList.add('interim');
+                 interimP.textContent = applyVocabulary(interimTranscript);
+                 outputContainer.appendChild(interimP);
+            }
+            
+            // Auto-scroll logic for normal view
+            if(document.fullscreenElement !== outputContainer) {
+                 outputContainer.scrollTop = outputContainer.scrollHeight;
+            }
+        };
+    }
+    
+    function applyVocabulary(text) {
+        if (customVocabulary.length === 0 || !text) return text;
+        let correctedText = text;
+        customVocabulary.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            correctedText = correctedText.replace(regex, word);
+        });
+        return correctedText;
+    }
+    
+    // --- Event Listeners ---
+    startButton.addEventListener('click', () => {
+        if (!isManuallyStopped) {
+            isManuallyStopped = true;
+            if (recognition) recognition.stop();
+            startButton.textContent = 'Starta Livetextning';
+        } else {
+            customVocabulary = vocabularyTextarea.value.split('\n').filter(word => word.trim() !== '');
+            setupRecognition();
+            recognition.start();
+        }
+    });
+
+    teleprompterButton.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            outputContainer.classList.add('teleprompter-mode');
+            outputContainer.requestFullscreen().catch(err => {
+                alert(`Kunde inte starta helskärm: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    });
+    
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            outputContainer.classList.remove('teleprompter-mode');
+        }
+    });
+
+    // Font & Color Listeners
+    fontIncBtn.addEventListener('click', () => {
+        currentFontSize = Math.min(120, currentFontSize + 2);
+        fontSizeDisplay.textContent = currentFontSize;
+        outputContainer.style.fontSize = `${currentFontSize}px`;
+    });
+    fontDecBtn.addEventListener('click', () => {
+        currentFontSize = Math.max(12, currentFontSize - 2);
+        fontSizeDisplay.textContent = currentFontSize;
+        outputContainer.style.fontSize = `${currentFontSize}px`;
+    });
+    colorPicker.addEventListener('input', (e) => {
+        outputContainer.style.color = e.target.value;
+        colorDisplay.style.backgroundColor = e.target.value;
+    });
+
+    // Share & Save Listeners
+    shareButton.addEventListener('click', () => {
+        const qrContainer = document.getElementById('qr-code-container');
+        qrContainer.innerHTML = '';
+        const qr = qrcode(0, 'L');
+        qr.addData(window.location.href);
+        qr.make();
+        qrContainer.innerHTML = qr.createImgTag(6, 12);
+        qrModal.classList.add('visible');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        qrModal.classList.remove('visible');
+    });
+    
+    qrModal.addEventListener('click', (e) => {
+        if(e.target === qrModal) {
+            qrModal.classList.remove('visible');
+        }
+    });
+    
+    saveButton.addEventListener('click', () => {
+        if (transcriptSegments.length === 0) {
+            alert("Ingen text att spara.");
+            return;
+        }
+        downloadFile(generateSRT(), 'livetext.srt', 'text/plain;charset=utf-8');
+    });
+
+    // --- Helper Functions ---
+    function toSrtTimeFormat(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        const milliseconds = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+    }
+    
+    function generateSRT() {
+        if (transcriptSegments.length === 0) return '';
+        let srt = '';
+        const initialDate = transcriptSegments[0].startTime;
+        transcriptSegments.forEach((segment, index) => {
+            const startTime = (segment.startTime - initialDate) / 1000;
+            const endTime = (segment.endTime - initialDate) / 1000;
+            if(endTime > startTime) {
+                srt += `${index + 1}\n`;
+                srt += `${toSrtTimeFormat(startTime)} --> ${toSrtTimeFormat(endTime)}\n`;
+                srt += `${segment.text}\n\n`;
+            }
+        });
+        return srt;
+    }
+
+    function downloadFile(content, fileName, contentType) {
+        const a = document.createElement('a');
+        const file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    
+    // Set initial font size
+    outputContainer.style.fontSize = `${currentFontSize}px`;
+    </script>
+</body>
+</html>
