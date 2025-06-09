@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIVE TEXT (Enkel)</title>
+    <style>
+        :root {
+            --background-color: #121212;
+            --text-color: #FFFFFF;
+            --primary-color: #4CAF50;
+            --secondary-color: #333333;
+            --border-color: #FFFFFF;
+            --shadow-color: rgba(0, 0, 0, 0.75);
+            --font-family: 'Inter', 'Helvetica Neue', sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* --- Neo-Brutalist Design Elements --- */
+        .btn, select, textarea, .control-panel {
+            border: 3px solid var(--border-color);
+            box-shadow: 6px 6px 0 var(--shadow-color);
+            transition: all 0.15s ease-in-out;
+            font-family: var(--font-family);
+            font-weight: 700;
+        }
+
+        .btn:not(:disabled):hover, select:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 var(--shadow-color);
+        }
+
+        .btn:not(:disabled):active {
+            transform: translate(6px, 6px);
+            box-shadow: none;
+        }
+        
+        .btn:disabled, fieldset:disabled .btn, fieldset:disabled select, fieldset:disabled input {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+
+        /* --- Layout --- */
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            flex-grow: 1;
+            height: calc(100% - 80px); /* Adjust for header */
+        }
+
+        #settings-panel {
+            width: 350px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .control-panel {
+            background-color: var(--secondary-color);
+            padding: 1rem;
+        }
+        
+        #text-output-container {
+            flex-grow: 1;
+            background-color: black;
+            border: 3px solid var(--border-color);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #livetext-output {
+            flex-grow: 1;
+            font-size: 1.5rem; /* Fixed size is better for non-fullscreen */
+            line-height: 1.4;
+            color: var(--text-color);
+            word-wrap: break-word;
+            overflow-y: auto; /* Crucial for scrolling */
+            text-align: left;
+        }
+        
+        #livetext-output p {
+            margin: 0 0 0.5em 0;
+        }
+
+        #livetext-output .interim {
+            opacity: 0.6;
+        }
+        
+        /* --- Components --- */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 0 0 1.5rem 0;
+            text-transform: uppercase;
+            height: 50px;
+        }
+        
+        h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        select, textarea {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            text-transform: none;
+            font-weight: 400;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            padding: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+        
+        .btn-secondary {
+             background-color: #f44336; /* Red for stop/end */
+        }
+        
+        .btn-tertiary {
+            background-color: #008CBA; /* Blue */
+        }
+        
+        .styling-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .styling-controls label {
+            margin: 0;
+        }
+        
+        .styling-controls input[type="range"] {
+            flex-grow: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LIVE TEXT 🎙️</h1>
+    </header>
+
+    <div class="main-container">
+        <aside id="settings-panel">
+            <div class="control-panel">
+                <h2>1. Inställningar</h2>
+                <label for="language">Språk:</label>
+                <select id="language">
+                    <option value="sv-SE" selected>Svenska</option>
+                    <option value="en-US">Engelska (US)</option>
+                    <option value="da-DK">Danska</option>
+                    <option value="nb-NO">Norska (Bokmål)</option>
+                    <option value="is-IS">Isländska</option>
+                    <option value="fi-FI">Finska</option>
+                    <option value="fr-FR">Franska</option>
+                </select>
+                <label for="vocabulary" style="margin-top:1rem;">Egna ord (ett per rad):</label>
+                <textarea id="vocabulary" placeholder="Exempel:&#10;WCAG&#10;Neo-brutalism"></textarea>
+            </div>
+
+            <div class="control-panel">
+                <h2>2. Start & Kontroller</h2>
+                <button id="startButton" class="btn">Starta</button>
+                <fieldset id="session-controls" disabled>
+                    <button id="pauseButton" class="btn btn-tertiary" style="margin-top:1rem;">Pausa</button>
+                    <button id="saveButton" class="btn" style="margin-top:1rem;">Spara .SRT</button>
+                    <div class="styling-controls">
+                        <label for="textColorPicker">Färg:</label>
+                        <input type="color" id="textColorPicker" value="#FFFFFF" aria-label="Ändra textfärg">
+                        <label for="textSizeSlider">Storlek:</label>
+                        <input type="range" id="textSizeSlider" min="12" max="48" value="24" step="2" aria-label="Ändra textstorlek">
+                    </div>
+                </fieldset>
+            </div>
+             <div class="control-panel" style="background:none; border:none; box-shadow:none;">
+                <p>🔒 All ljudbehandling sker 100% lokalt i din webbläsare.</p>
+            </div>
+        </aside>
+
+        <main id="text-output-container">
+            <div id="livetext-output" aria-live="polite" aria-atomic="false">
+                <p>Väntar på att starta transkribering...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            alert("Tyvärr, din webbläsare stödjer inte Web Speech API. Prova Google Chrome.");
+        }
+
+        // --- DOM Elements ---
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const saveButton = document.getElementById('saveButton');
+        const languageSelect = document.getElementById('language');
+        const outputDiv = document.getElementById('livetext-output');
+        const vocabularyTextarea = document.getElementById('vocabulary');
+        const textColorPicker = document.getElementById('textColorPicker');
+        const textSizeSlider = document.getElementById('textSizeSlider');
+        const sessionControls = document.getElementById('session-controls');
+
+        // --- State ---
+        let recognition;
+        let isTranscribing = false;
+        let isPaused = false;
+        let transcriptSegments = []; // For SRT
+        let transcriptStartTime = null;
+        let customVocabulary = [];
+        let finalTranscriptContainer = null; // To group results
+
+        // --- Speech Recognition Logic ---
+        function setupRecognition() {
+            recognition = new SpeechRecognition();
+            recognition.lang = languageSelect.value;
+            recognition.continuous = true; // Keep listening
+            recognition.interimResults = true; // Show results as they come
+
+            recognition.onstart = () => {
+                console.log('Recognition started.');
+                isTranscribing = true;
+                isPaused = false;
+                
+                // Update UI
+                startButton.textContent = 'Avsluta';
+                startButton.classList.add('btn-secondary');
+                pauseButton.textContent = 'Pausa';
+                sessionControls.disabled = false;
+                languageSelect.disabled = true; // Lock language during session
+                
+                if (outputDiv.innerHTML.includes('Väntar på att starta')) {
+                    outputDiv.innerHTML = '';
+                }
+            };
+
+            // THIS IS THE KEY for long transcriptions.
+            // Browsers often stop recognition after ~1 minute. This restarts it automatically.
+            recognition.onend = () => {
+                console.log('Recognition session ended.');
+                if (isTranscribing && !isPaused) {
+                    console.log('Restarting recognition to continue session...');
+                    recognition.start(); // Auto-restart
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                
+                finalTranscript = applyVocabulary(finalTranscript);
+
+                if (finalTranscript) {
+                    const segmentTime = new Date();
+                    if (!transcriptStartTime) transcriptStartTime = segmentTime;
+                    
+                    transcriptSegments.push({
+                        text: finalTranscript.trim(),
+                        startTime: transcriptStartTime,
+                        endTime: segmentTime
+                    });
+                    transcriptStartTime = segmentTime;
+                    
+                    if (!finalTranscriptContainer) {
+                        finalTranscriptContainer = document.createElement('p');
+                        outputDiv.appendChild(finalTranscriptContainer);
+                    }
+                    finalTranscriptContainer.textContent += finalTranscript;
+                    finalTranscriptContainer = null; // Create new paragraph for next final result
+                }
+                
+                // Update the interim text display
+                let interimEl = outputDiv.querySelector('.interim');
+                if (!interimEl) {
+                    interimEl = document.createElement('p');
+                    interimEl.classList.add('interim');
+                    outputDiv.appendChild(interimEl);
+                }
+                interimEl.textContent = applyVocabulary(interimTranscript);
+                
+                if (!interimTranscript) {
+                    interimEl.remove();
+                }
+
+                // Auto-scroll to the bottom
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed') {
+                    alert('Du måste ge tillåtelse till mikrofonen.');
+                }
+                endTranscription();
+            };
+        }
+        
+        function applyVocabulary(text) {
+             if (customVocabulary.length === 0 || !text) return text;
+             let correctedText = text;
+             customVocabulary.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                correctedText = correctedText.replace(regex, word);
+             });
+             return correctedText;
+        }
+
+        function endTranscription() {
+            isTranscribing = false;
+            isPaused = false;
+            
+            // Update UI
+            startButton.textContent = 'Starta';
+            startButton.classList.remove('btn-secondary');
+            sessionControls.disabled = true;
+            languageSelect.disabled = false;
+            
+            transcriptStartTime = null;
+        }
+
+        // --- Button Event Listeners ---
+        startButton.addEventListener('click', () => {
+            if (isTranscribing) {
+                recognition.stop();
+                endTranscription();
+            } else {
+                customVocabulary = vocabularyTextarea.value.split('\n').filter(word => word.trim() !== '');
+                setupRecognition();
+                recognition.start();
+            }
+        });
+
+        pauseButton.addEventListener('click', () => {
+            if (!isTranscribing) return;
+
+            if (isPaused) {
+                isPaused = false;
+                pauseButton.textContent = 'Pausa';
+                recognition.start();
+            } else {
+                isPaused = true;
+                pauseButton.textContent = 'Återuppta';
+                recognition.stop();
+            }
+        });
+
+        saveButton.addEventListener('click', () => {
+            if (transcriptSegments.length === 0) {
+                alert("Det finns ingen transkription att spara.");
+                return;
+            }
+            const srtContent = generateSRT();
+            downloadFile(srtContent, 'livetext.srt', 'text/plain;charset=utf-8');
+        });
+        
+        // --- UI Controls ---
+        textColorPicker.addEventListener('input', (e) => {
+            outputDiv.style.color = e.target.value;
+        });
+
+        textSizeSlider.addEventListener('input', (e) => {
+            outputDiv.style.fontSize = `${e.target.value}px`;
+        });
+
+
+        // --- Helper Functions ---
+        function toSrtTimeFormat(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            totalSeconds %= 3600;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const milliseconds = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
+
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+        }
+        
+        function generateSRT() {
+            if (transcriptSegments.length === 0) return '';
+            
+            let srt = '';
+            let cumulativeTime = 0;
+            const initialDate = transcriptSegments[0].startTime;
+
+            transcriptSegments.forEach((segment, index) => {
+                const startTime = (segment.startTime - initialDate) / 1000;
+                const endTime = (segment.endTime - initialDate) / 1000;
+                
+                srt += `${index + 1}\n`;
+                srt += `${toSrtTimeFormat(startTime)} --> ${toSrtTimeFormat(endTime)}\n`;
+                srt += `${segment.text}\n\n`;
+            });
+            
+            return srt;
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            const a = document.createElement('a');
+            const file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+    </script>
+</body>
+</html>
