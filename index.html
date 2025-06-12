@@ -11,12 +11,15 @@
             --text-color-dark: #FFFFFF;
             --border-color-outer-dark: #555555;
             --border-color-inner-dark: #FFFFFF;
+            --header-p-color-dark: #AAAAAA;
 
             --bg-color-light: #F0F0F0;
             --text-color-light: #000000;
             --border-color-outer-light: #AAAAAA;
             --border-color-inner-light: #000000;
+            --header-p-color-light: #333333;
             
+            --focus-outline-color: #007BFF;
             --font-family: 'Inter', 'Helvetica Neue', sans-serif;
         }
 
@@ -42,14 +45,14 @@
             --text-color: var(--text-color-dark);
             --border-color-outer: var(--border-color-outer-dark);
             --border-color-inner: var(--border-color-inner-dark);
-            --header-p-color: #AAAAAA;
+            --header-p-color: var(--header-p-color-dark);
         }
         .theme-light {
             --bg-color: var(--bg-color-light);
             --text-color: var(--text-color-light);
             --border-color-outer: var(--border-color-outer-light);
             --border-color-inner: var(--border-color-inner-light);
-            --header-p-color: #333333;
+            --header-p-color: var(--header-p-color-light);
         }
 
         body {
@@ -62,6 +65,12 @@
             box-shadow: inset 0 0 0 1px var(--border-color-inner);
             background-color: var(--bg-color);
             transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
+        }
+        
+        /* --- Accessibility --- */
+        .btn:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--focus-outline-color);
+            outline-offset: 2px;
         }
 
         header {
@@ -82,6 +91,11 @@
             margin: 0.5rem 0 0 0;
             color: var(--header-p-color);
         }
+        
+        #api-support-message {
+            color: #FF6B6B;
+            font-weight: bold;
+        }
 
         .main-container {
             width: 100%;
@@ -96,7 +110,6 @@
             min-height: 200px;
             padding: 2rem;
             margin-bottom: 1rem;
-            font-size: 2rem;
             font-weight: 700;
             line-height: 1.4;
             overflow-y: auto;
@@ -132,7 +145,8 @@
             text-transform: uppercase;
             cursor: pointer;
             text-align: left;
-            transition: background-color 0.3s, color 0.3s;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+            border: none; /* Reset default browser borders */
         }
         
         textarea {
@@ -164,6 +178,10 @@
         .btn.active {
              background-color: var(--text-color);
              color: var(--bg-color);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .action-buttons {
@@ -216,6 +234,11 @@
         }
         .bottom-buttons > .btn {
             flex: 1 1 150px;
+        }
+        
+        /* Utility class to hide elements */
+        .hidden {
+            display: none !important;
         }
 
         /* --- TELEPROMPTER & FULLSCREEN STYLES --- */
@@ -294,14 +317,13 @@
     <div class="main-container">
         <header>
             <h1>LIVETEXT IRL</h1>
-            <p>Tal-till-text direkt i webbläsaren via Web Speech API. Nödvändig för vissa, men användbar för alla.</p>
-                         <div class="action-buttons">
-                        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
-                    </div>
-
+            <p id="app-description">Tal-till-text direkt i webbläsaren via Web Speech API. Nödvändig för vissa, men användbar för alla.</p>
+             <div class="action-buttons">
+                <button id="startButton" class="btn bordered-box">Starta livetextning</button>
+            </div>
         </header>
     
-        <div id="output-container" class="bordered-box">
+        <div id="output-container" class="bordered-box" role="log" aria-live="polite">
             <p>Väntar på start...</p>
         </div>
         
@@ -322,38 +344,46 @@
                         <button id="teleprompterButton" class="btn bordered-box">Helskärm</button>
                         <button id="clearButton" class="btn bordered-box">Rensa</button>
                     </div>
-                </br>
+                    <br>
                     <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
                     <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Namn X, ord Y"></textarea>
                 </div>
-           
+            
                 <!-- Kolumn 2 -->
                 <div class="grid-item">
                     <div class="size-controls">
                          <label>Textstorlek:</label>
                          <div class="font-size-control bordered-box">
-                             <button id="font-dec" class="btn">-</button>
-                             <div id="font-size-display" class="font-size-display">32</div>
-                             <button id="font-inc" class="btn">+</button>
+                              <button id="font-dec" class="btn" aria-label="Minska textstorlek">-</button>
+                              <div id="font-size-display" class="font-size-display">32</div>
+                              <button id="font-inc" class="btn" aria-label="Öka textstorlek">+</button>
                          </div>
                     </div>
                     <div class="theme-controls" style="margin-top: 1.5rem;">
-                        <label>Färg:</label>
+                        <label>Färgtema:</label>
                         <div class="control-row">
-                            <button class="btn theme-btn bordered-box active" data-theme="dark">Svart</button>
-                            <button class="btn theme-btn bordered-box" data-theme="light">Vitt</button>
+                            <button class="btn theme-btn bordered-box active" data-theme="dark" aria-label="Byt till mörkt tema">Svart</button>
+                            <button class="btn theme-btn bordered-box" data-theme="light" aria-label="Byt till ljust tema">Vitt</button>
                         </div>
-                        <div class="control-row">
-                             <button class="btn text-color-btn bordered-box" data-color="#FFFF00">Gul</button>
-                             <button class="btn text-color-btn bordered-box" data-color="#00FFFF">Cyan</button>
-                             <button class="btn text-color-btn bordered-box active" data-color="#FFFFFF">Vit</button>
+                        <label style="margin-top: 1rem;">Textfärg:</label>
+                        <!-- Text colors for Dark Theme -->
+                        <div id="text-colors-dark" class="control-row">
+                             <button class="btn text-color-btn bordered-box" data-color="#FFFF00" aria-label="Byt textfärg till gul">Gul</button>
+                             <button class="btn text-color-btn bordered-box" data-color="#00FFFF" aria-label="Byt textfärg till cyan">Cyan</button>
+                             <button class="btn text-color-btn bordered-box active" data-color="#FFFFFF" aria-label="Byt textfärg till vit">Vit</button>
                         </div>
-                    </div>
-                         <div class="action-buttons">
-                      <button id="saveButton" class="btn bordered-box">Ladda ner .SRT</button>
-                        <button id="shareButton" class="btn bordered-box">Dela Länk/QR</button>
-                </div>
+                        <!-- Text colors for Light Theme (initially hidden) -->
+                        <div id="text-colors-light" class="control-row hidden">
+                            <button class="btn text-color-btn bordered-box" data-color="#000000" aria-label="Byt textfärg till svart">Svart</button>
+                            <button class="btn text-color-btn bordered-box" data-color="#D9480F" aria-label="Byt textfärg till mörkorange">Orange</button>
+                            <button class="btn text-color-btn bordered-box" data-color="#1864AB" aria-label="Byt textfärg till mörkblå">Blå</button>
                        </div>
+                    </div>
+                     <div class="action-buttons">
+                        <button id="saveButton" class="btn bordered-box">Ladda ner .SRT</button>
+                        <button id="shareButton" class="btn bordered-box">Dela Länk/QR</button>
+                    </div>
+                </div>
             </div>
             <div class="bottom-buttons">
                 <button id="infoButton" class="btn bordered-box">Info</button>
@@ -376,26 +406,26 @@
              <hr>
              <h4>💡 Vad appen gör:</h4>
              <ul>
-                 <li>Live-transkribering i realtid – när någon talar, visas texten direkt på skärmen.</li>
-                 <li>Ingen installation krävs – körs direkt i Chrome (fungerar även i Edge, Safari och på iPhone).</li>
-                 <li>Allt sker lokalt – ingen server används, inget ljud skickas iväg.</li>
+                  <li>Live-transkribering i realtid – när någon talar, visas texten direkt på skärmen.</li>
+                  <li>Ingen installation krävs – körs direkt i Chrome (fungerar även i Edge, Safari och på iPhone).</li>
+                  <li>Allt sker lokalt – ingen server används, inget ljud skickas iväg.</li>
              </ul>
              <h4>🔧 Funktioner:</h4>
              <ul>
-                 <li>Taligenkänning via Web Speech API – omvandlar tal till text automatiskt.</li>
-                 <li>Stöd för flera språk – välj igenkänningsspråk som passar ditt event.</li>
-                 <li>Anpassningsbar textvisning – ändra textstorlek och färg efter behov.</li>
-                 <li>Lägg till egna ord och namn – förbättra igenkänningen med t.ex. talarnamn eller facktermer.</li>
-                 <li>Helskärmsläge med teleprompterkänsla – för tydlig visning vid livevisning eller scen.</li>
-                 <li>Spara som undertextfil (.srt) – ladda ner transkriptionen med tidskoder för användning i videoredigering.</li>
-                 <li>Dela enkelt med andra – generera en länk eller QR-kod för snabb åtkomst.</li>
+                  <li>Taligenkänning via Web Speech API – omvandlar tal till text automatiskt.</li>
+                  <li>Stöd för flera språk – välj igenkänningsspråk som passar ditt event.</li>
+                  <li>Anpassningsbar textvisning – ändra textstorlek och färg efter behov.</li>
+                  <li>Lägg till egna ord och namn – förbättra igenkänningen med t.ex. talarnamn eller facktermer.</li>
+                  <li>Helskärmsläge med teleprompterkänsla – för tydlig visning vid livevisning eller scen.</li>
+                  <li>Spara som undertextfil (.srt) – ladda ner transkriptionen med tidskoder för användning i videoredigering.</li>
+                  <li>Dela enkelt med andra – generera en länk eller QR-kod för snabb åtkomst.</li>
              </ul>
              <h4>🛠 Hur det fungerar:</h4>
              <ul>
-                 <li>Appen startas med ett klick – ingen inloggning eller registrering behövs.</li>
-                 <li>Mikrofonen används för att lyssna på talet.</li>
-                 <li>Texten visas direkt i ett tydligt fönster och sparas i bakgrunden.</li>
-                 <li>När du är klar kan du ladda ner allt som en färdig undertextfil (.srt).</li>
+                  <li>Appen startas med ett klick – ingen inloggning eller registrering behövs.</li>
+                  <li>Mikrofonen används för att lyssna på talet.</li>
+                  <li>Texten visas direkt i ett tydligt fönster och sparas i bakgrunden.</li>
+                  <li>När du är klar kan du ladda ner allt som en färdig undertextfil (.srt).</li>
              </ul>
              <hr>
              <p>LIVETEXT IRL har skapats av Joakim Hesselman för att användas i samband med Samhalls årsstämma i maj 2025.</p>
@@ -404,263 +434,312 @@
     </div>
 
     <script>
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    document.addEventListener('DOMContentLoaded', () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    // --- DOM Elements ---
-    const body = document.body;
-    const startButton = document.getElementById('startButton');
-    const teleprompterButton = document.getElementById('teleprompterButton');
-    const saveButton = document.getElementById('saveButton');
-    const clearButton = document.getElementById('clearButton');
-    const shareButton = document.getElementById('shareButton');
-    const infoButton = document.getElementById('infoButton');
-    const languageSelect = document.getElementById('language');
-    const outputContainer = document.getElementById('output-container');
-    const vocabularyTextarea = document.getElementById('vocabulary');
-    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-    
-    // Theme, Color & Size controls
-    const themeButtons = document.querySelectorAll('.theme-btn');
-    const textColorButtons = document.querySelectorAll('.text-color-btn');
-    const fontIncBtn = document.getElementById('font-inc');
-    const fontDecBtn = document.getElementById('font-dec');
-    const fontSizeDisplay = document.getElementById('font-size-display');
-    
-    // Modal controls
-    const qrModal = document.getElementById('qrModal');
-    const closeQRModalBtn = document.getElementById('closeQRModal');
-    const infoModal = document.getElementById('infoModal');
-    const closeInfoModalBtn = document.getElementById('closeInfoModal');
-    
-    // State
-    let recognition;
-    let isManuallyStopped = true;
-    let transcriptSegments = [];
-    let transcriptStartTime = null;
-    let customVocabulary = [];
-    let currentTextColor = '#FFFFFF';
-    let currentFontSize = 32;
-    
-    if (!SpeechRecognition) {
-        alert("Web Speech API stöds inte av denna webbläsare. Prova Google Chrome.");
-        startButton.disabled = true;
-    }
-
-    // --- Main Functions ---
-    function setupRecognition() {
-        recognition = new SpeechRecognition();
-        recognition.lang = languageSelect.value;
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onstart = () => {
-            isManuallyStopped = false;
-            startButton.textContent = 'Stoppa Livetextning';
-            if (outputContainer.textContent.includes('Väntar på start...')) {
-                outputContainer.innerHTML = '';
-            }
-        };
-
-        recognition.onend = () => {
-            if (!isManuallyStopped) {
-                console.log('Recognition session ended, restarting automatically.');
-                recognition.start();
-            }
-        };
+        // --- DOM Elements ---
+        const body = document.body;
+        const startButton = document.getElementById('startButton');
+        const teleprompterButton = document.getElementById('teleprompterButton');
+        const saveButton = document.getElementById('saveButton');
+        const clearButton = document.getElementById('clearButton');
+        const shareButton = document.getElementById('shareButton');
+        const infoButton = document.getElementById('infoButton');
+        const languageSelect = document.getElementById('language');
+        const outputContainer = document.getElementById('output-container');
+        const vocabularyTextarea = document.getElementById('vocabulary');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+        const appDescription = document.getElementById('app-description');
         
-        recognition.onerror = (event) => console.error("Speech Recognition Error:", event.error);
-
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            let finalTranscript = '';
-            
-            const existingInterim = outputContainer.querySelector('.interim');
-            if(existingInterim) existingInterim.remove();
-
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                const transcriptPart = event.results[i][0].transcript;
-                if (event.results[i].isFinal) finalTranscript += transcriptPart + ' ';
-                else interimTranscript += transcriptPart;
+        // Theme, Color & Size controls
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const textColorsDarkContainer = document.getElementById('text-colors-dark');
+        const textColorsLightContainer = document.getElementById('text-colors-light');
+        const allTextColorButtons = document.querySelectorAll('.text-color-btn');
+        const fontIncBtn = document.getElementById('font-inc');
+        const fontDecBtn = document.getElementById('font-dec');
+        const fontSizeDisplay = document.getElementById('font-size-display');
+        
+        // Modal controls
+        const qrModal = document.getElementById('qrModal');
+        const closeQRModalBtn = document.getElementById('closeQRModal');
+        const infoModal = document.getElementById('infoModal');
+        const closeInfoModalBtn = document.getElementById('closeInfoModal');
+        
+        // --- State ---
+        let recognition;
+        let isManuallyStopped = true;
+        let transcriptSegments = [];
+        let transcriptStartTime = null;
+        let customVocabulary = [];
+        let currentTextColor = '#FFFFFF'; // Initial default for dark theme
+        let currentFontSize = 32;
+        
+        // --- Initialization ---
+        function initialize() {
+            if (!SpeechRecognition) {
+                appDescription.textContent = "Web Speech API stöds inte av denna webbläsare. Prova Google Chrome.";
+                appDescription.id = 'api-support-message';
+                [startButton, teleprompterButton, saveButton, languageSelect].forEach(el => el.disabled = true);
+                return;
             }
-
-            if (finalTranscript) {
-                const finalP = document.createElement('p');
-                finalP.textContent = applyVocabulary(finalTranscript);
-                outputContainer.appendChild(finalP);
-                 const segmentTime = new Date();
-                if (!transcriptStartTime) transcriptStartTime = segmentTime;
-                transcriptSegments.push({
-                    text: applyVocabulary(finalTranscript.trim()),
-                    startTime: transcriptStartTime,
-                    endTime: segmentTime
-                });
-                transcriptStartTime = segmentTime;
-            }
-            if (interimTranscript) {
-                 const interimP = document.createElement('p');
-                 interimP.classList.add('interim');
-                 interimP.textContent = applyVocabulary(interimTranscript);
-                 outputContainer.appendChild(interimP);
-            }
-            
-            if(document.fullscreenElement !== outputContainer) {
-                 outputContainer.scrollTop = outputContainer.scrollHeight;
-            }
-        };
-    }
-    
-    function applyVocabulary(text) {
-        if (customVocabulary.length === 0 || !text) return text;
-        let correctedText = text;
-        customVocabulary.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'gi');
-            correctedText = correctedText.replace(regex, word);
-        });
-        return correctedText;
-    }
-    
-    function resetTranscription() {
-        outputContainer.innerHTML = '<p>Väntar på start...</p>';
-        transcriptSegments = [];
-        transcriptStartTime = null;
-    }
-
-    function updateTextSize() {
-        fontSizeDisplay.textContent = currentFontSize;
-        outputContainer.style.fontSize = `${currentFontSize}px`;
-    }
-    
-    // --- Event Listeners ---
-    startButton.addEventListener('click', () => {
-        if (!isManuallyStopped) {
-            isManuallyStopped = true;
-            if (recognition) recognition.stop();
-            startButton.textContent = 'Starta livetextning';
-        } else {
-            customVocabulary = vocabularyTextarea.value.split('\n').filter(word => word.trim() !== '');
-            setupRecognition();
-            recognition.start();
+            setupEventListeners();
+            updateTextSize();
+            updateTextColor(currentTextColor);
         }
-    });
 
-    teleprompterButton.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-            outputContainer.classList.add('teleprompter-mode');
-            outputContainer.requestFullscreen().catch(err => {
-                alert(`Kunde inte starta helskärm: ${err.message}`);
+        // --- Main Functions ---
+        function setupRecognition() {
+            recognition = new SpeechRecognition();
+            recognition.lang = languageSelect.value;
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isManuallyStopped = false;
+                startButton.textContent = 'Stoppa Livetextning';
+                startButton.classList.add('active');
+                if (outputContainer.textContent.includes('Väntar på start...')) {
+                    outputContainer.innerHTML = '';
+                }
+            };
+
+            recognition.onend = () => {
+                if (!isManuallyStopped) {
+                    console.log('Recognition session ended, restarting automatically.');
+                    // Check if recognition exists before starting
+                    if (recognition) recognition.start();
+                } else {
+                    startButton.textContent = 'Starta livetextning';
+                    startButton.classList.remove('active');
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    isManuallyStopped = true;
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                const existingInterim = outputContainer.querySelector('.interim');
+                if(existingInterim) existingInterim.remove();
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcriptPart = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) finalTranscript += transcriptPart + ' ';
+                    else interimTranscript += transcriptPart;
+                }
+
+                if (finalTranscript) {
+                    const finalP = document.createElement('p');
+                    finalP.textContent = applyVocabulary(finalTranscript);
+                    outputContainer.appendChild(finalP);
+                     const segmentTime = new Date();
+                    if (!transcriptStartTime) transcriptStartTime = segmentTime;
+                    transcriptSegments.push({
+                        text: applyVocabulary(finalTranscript.trim()),
+                        startTime: transcriptStartTime,
+                        endTime: segmentTime
+                    });
+                    transcriptStartTime = segmentTime;
+                }
+                if (interimTranscript) {
+                     const interimP = document.createElement('p');
+                     interimP.classList.add('interim');
+                     interimP.textContent = applyVocabulary(interimTranscript);
+                     outputContainer.appendChild(interimP);
+                }
+                
+                // Auto-scroll logic
+                if(document.fullscreenElement !== outputContainer) {
+                     outputContainer.scrollTop = outputContainer.scrollHeight;
+                }
+            };
+        }
+        
+        function applyVocabulary(text) {
+            if (customVocabulary.length === 0 || !text) return text;
+            let correctedText = text;
+            customVocabulary.forEach(word => {
+                // Use a regex that is case-insensitive but replaces with the correct case
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                correctedText = correctedText.replace(regex, word);
             });
-        } else {
-            document.exitFullscreen();
+            return correctedText;
         }
-    });
-
-    exitFullscreenBtn.addEventListener('click', () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
+        
+        function resetTranscription() {
+            outputContainer.innerHTML = '<p>Väntar på start...</p>';
+            transcriptSegments = [];
+            transcriptStartTime = null;
         }
-    });
-    
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            outputContainer.classList.remove('teleprompter-mode');
+
+        function updateTextSize() {
+            fontSizeDisplay.textContent = currentFontSize;
+            outputContainer.style.fontSize = `${currentFontSize}px`;
         }
-    });
-    
-    clearButton.addEventListener('click', resetTranscription);
 
-    fontIncBtn.addEventListener('click', () => {
-        currentFontSize = Math.min(120, currentFontSize + 2);
-        updateTextSize();
-    });
-    fontDecBtn.addEventListener('click', () => {
-        currentFontSize = Math.max(12, currentFontSize - 2);
-        updateTextSize();
-    });
-
-    themeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const theme = button.dataset.theme;
-            body.className = `theme-${theme}`;
-            themeButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-        });
-    });
-
-    textColorButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            currentTextColor = button.dataset.color;
+        function updateTextColor(color) {
+            currentTextColor = color;
             outputContainer.style.setProperty('--output-color', currentTextColor);
-            textColorButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-        });
-    });
-
-    // Modal Listeners
-    function setupModal(button, modal, closeButton) {
-        button.addEventListener('click', () => modal.classList.add('visible'));
-        closeButton.addEventListener('click', () => modal.classList.remove('visible'));
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('visible');
-        });
-    }
-    
-    setupModal(shareButton, qrModal, closeQRModalBtn);
-    setupModal(infoButton, infoModal, closeInfoModalBtn);
-
-    shareButton.addEventListener('click', () => {
-        const qrContainer = document.getElementById('qr-code-container');
-        qrContainer.innerHTML = '';
-        const qr = qrcode(0, 'L');
-        qr.addData(window.location.href);
-        qr.make();
-        qrContainer.innerHTML = qr.createImgTag(6, 12);
-    });
-    
-    saveButton.addEventListener('click', () => {
-        if (transcriptSegments.length === 0) {
-            alert("Ingen text att spara.");
-            return;
+            allTextColorButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.color === currentTextColor);
+            });
         }
-        downloadFile(generateSRT(), 'livetext.srt', 'text/plain;charset=utf-8');
-    });
+        
+        // --- Event Listeners Setup ---
+        function setupEventListeners() {
+            startButton.addEventListener('click', () => {
+                if (!isManuallyStopped) {
+                    isManuallyStopped = true;
+                    if (recognition) recognition.stop();
+                } else {
+                    customVocabulary = vocabularyTextarea.value.split('\n').filter(word => word.trim() !== '');
+                    setupRecognition();
+                    recognition.start();
+                }
+            });
 
-    // --- Helper Functions ---
-    function toSrtTimeFormat(totalSeconds) {
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = Math.floor(totalSeconds % 60);
-        const milliseconds = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
-    }
-    
-    function generateSRT() {
-        if (transcriptSegments.length === 0) return '';
-        let srt = '';
-        const initialDate = transcriptSegments[0].startTime;
-        transcriptSegments.forEach((segment, index) => {
-            const startTime = (segment.startTime - initialDate) / 1000;
-            const endTime = (segment.endTime - initialDate) / 1000;
-            if(endTime > startTime) {
-                srt += `${index + 1}\n`;
-                srt += `${toSrtTimeFormat(startTime)} --> ${toSrtTimeFormat(endTime)}\n`;
-                srt += `${segment.text}\n\n`;
+            teleprompterButton.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    outputContainer.classList.add('teleprompter-mode');
+                    outputContainer.requestFullscreen().catch(err => {
+                        console.error(`Kunde inte starta helskärm: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            exitFullscreenBtn.addEventListener('click', () => {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            });
+            
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) {
+                    outputContainer.classList.remove('teleprompter-mode');
+                }
+            });
+            
+            clearButton.addEventListener('click', resetTranscription);
+
+            fontIncBtn.addEventListener('click', () => {
+                currentFontSize = Math.min(120, currentFontSize + 2);
+                updateTextSize();
+            });
+            fontDecBtn.addEventListener('click', () => {
+                currentFontSize = Math.max(12, currentFontSize - 2);
+                updateTextSize();
+            });
+
+            themeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const theme = button.dataset.theme;
+                    body.className = `theme-${theme}`;
+                    themeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Update text color controls and set default text color
+                    if (theme === 'light') {
+                        textColorsDarkContainer.classList.add('hidden');
+                        textColorsLightContainer.classList.remove('hidden');
+                        updateTextColor('#000000'); // Default for light theme
+                    } else {
+                        textColorsDarkContainer.classList.remove('hidden');
+                        textColorsLightContainer.classList.add('hidden');
+                        updateTextColor('#FFFFFF'); // Default for dark theme
+                    }
+                });
+            });
+
+            allTextColorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    updateTextColor(button.dataset.color);
+                });
+            });
+
+            // Modal Listeners
+            function setupModal(button, modal, closeButton) {
+                button.addEventListener('click', () => modal.classList.add('visible'));
+                closeButton.addEventListener('click', () => modal.classList.remove('visible'));
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) modal.classList.remove('visible');
+                });
             }
-        });
-        return srt;
-    }
+            
+            setupModal(shareButton, qrModal, closeQRModalBtn);
+            setupModal(infoButton, infoModal, closeInfoModalBtn);
 
-    function downloadFile(content, fileName, contentType) {
-        const a = document.createElement('a');
-        const file = new Blob([content], { type: contentType });
-        a.href = URL.createObjectURL(file);
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(a.href);
-    }
-    
-    // Set initial text color & size
-    outputContainer.style.setProperty('--output-color', currentTextColor);
-    updateTextSize();
+            shareButton.addEventListener('click', () => {
+                const qrContainer = document.getElementById('qr-code-container');
+                qrContainer.innerHTML = '';
+                try {
+                    const qr = qrcode(0, 'L');
+                    qr.addData(window.location.href);
+                    qr.make();
+                    qrContainer.innerHTML = qr.createImgTag(6, 12);
+                } catch (e) {
+                    qrContainer.textContent = 'Kunde inte generera QR-kod.';
+                    console.error("QR Code generation failed:", e);
+                }
+            });
+            
+            saveButton.addEventListener('click', () => {
+                if (transcriptSegments.length === 0) {
+                    // Consider a more user-friendly notification
+                    console.warn("Ingen text att spara.");
+                    return;
+                }
+                downloadFile(generateSRT(), 'livetext.srt', 'text/plain;charset=utf-8');
+            });
+        }
+
+        // --- Helper Functions ---
+        function toSrtTimeFormat(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const milliseconds = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+        }
+        
+        function generateSRT() {
+            if (transcriptSegments.length === 0) return '';
+            let srt = '';
+            const initialDate = transcriptSegments[0].startTime;
+            transcriptSegments.forEach((segment, index) => {
+                const startTime = (segment.startTime - initialDate) / 1000;
+                const endTime = (segment.endTime - initialDate) / 1000;
+                if(endTime > startTime) {
+                    srt += `${index + 1}\n`;
+                    srt += `${toSrtTimeFormat(startTime)} --> ${toSrtTimeFormat(endTime)}\n`;
+                    srt += `${segment.text}\n\n`;
+                }
+            });
+            return srt;
+        }
+
+        function downloadFile(content, fileName, contentType) {
+            const a = document.createElement('a');
+            const file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            document.body.appendChild(a); // Required for Firefox
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+        }
+        
+        // --- Start the app ---
+        initialize();
+    });
     </script>
 </body>
 </html>
