@@ -269,7 +269,10 @@
     <div class="main-container">
         <header>
             <h1>LIVE TEXT</h1>
-            <p>Direkttextning i din webbläsare. Nödvändigt för vissa, men användbart för alla.</p>
+            <p>Tal-till-text direkt i webbläsaren via Web Speech API. Nödvändig för vissa, men användbar för alla.</p>
+                   <div class="bottom-buttons">
+                <button id="infoButton" class="btn bordered-box">Info</button>
+            </div>
         </header>
     
         <div id="output-container" class="bordered-box">
@@ -290,13 +293,13 @@
                         <option value="nb-NO">Norska (Bokmål)</option>
                     </select>
                     <div class="action-buttons">
-                        <button id="startButton" class="btn bordered-box">Starta Livetextning</button>
-                        <button id="teleprompterButton" class="btn bordered-box">Helskärm Teleprompter</button>
+                        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
+                        <button id="teleprompterButton" class="btn bordered-box">Helskärm</button>
                     </div>
                 </div>
                 <!-- Kolumn 2 -->
                 <div class="grid-item">
-                    <label>Tema & Textfärg:</label>
+                    <label>Färg:</label>
                     <div class="theme-controls">
                         <div class="color-buttons">
                             <button class="btn theme-btn bordered-box active" data-theme="dark">Svart</button>
@@ -312,7 +315,7 @@
                 <!-- Kolumn 3 -->
                 <div class="grid-item">
                     <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
-                    <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Produktnamn X, Konferens Y"></textarea>
+                    <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Namn X, ord Y"></textarea>
                 </div>
             </div>
             <div class="bottom-buttons">
