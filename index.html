@@ -295,6 +295,10 @@
         <header>
             <h1>LIVETEXT IRL</h1>
             <p>Tal-till-text direkt i webbläsaren via Web Speech API. Nödvändig för vissa, men användbar för alla.</p>
+                         <div class="action-buttons">
+                        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
+                    </div>
+
         </header>
     
         <div id="output-container" class="bordered-box">
@@ -316,15 +320,12 @@
                     </select>
                     <div class="action-buttons">
                         <button id="teleprompterButton" class="btn bordered-box">Helskärm</button>
-                        <button id="saveButton" class="btn bordered-box">Ladda ner .SRT</button>
                         <button id="clearButton" class="btn bordered-box">Rensa</button>
-                        <button id="shareButton" class="btn bordered-box">Dela Länk/QR</button>
                     </div>
-                </div>
-                 <div class="grid-item">
                     <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
                     <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Namn X, ord Y"></textarea>
                 </div>
+           
                 <!-- Kolumn 2 -->
                 <div class="grid-item">
                     <div class="size-controls">
@@ -335,7 +336,6 @@
                              <button id="font-inc" class="btn">+</button>
                          </div>
                     </div>
-                    
                     <div class="theme-controls" style="margin-top: 1.5rem;">
                         <label>Färg:</label>
                         <div class="control-row">
@@ -348,7 +348,11 @@
                              <button class="btn text-color-btn bordered-box active" data-color="#FFFFFF">Vit</button>
                         </div>
                     </div>
+                         <div class="action-buttons">
+                      <button id="saveButton" class="btn bordered-box">Ladda ner .SRT</button>
+                        <button id="shareButton" class="btn bordered-box">Dela Länk/QR</button>
                 </div>
+                       </div>
             </div>
             <div class="bottom-buttons">
                 <button id="infoButton" class="btn bordered-box">Info</button>
