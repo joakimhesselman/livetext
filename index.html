@@ -102,6 +102,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            color: var(--output-color, var(--text-color));
         }
 
         .controls-container {
@@ -172,13 +173,37 @@
             margin-top: 1.5rem;
         }
 
-        .theme-controls {
+        .theme-controls, .size-controls {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
-        .color-buttons { display: flex; gap: 1rem; }
-        .color-buttons .btn { flex-grow: 1; }
+        .control-row { display: flex; gap: 1rem; }
+        .control-row .btn { flex-grow: 1; }
+        
+        .font-size-control {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .font-size-control button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .font-size-display {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 0 1rem;
+            height: 50px;
+            line-height: 50px;
+        }
         
         .bottom-buttons {
             display: flex;
@@ -270,9 +295,6 @@
         <header>
             <h1>LIVETEXT IRL</h1>
             <p>Tal-till-text direkt i webbläsaren via Web Speech API. Nödvändig för vissa, men användbar för alla.</p>
-             <div class="action-buttons">
-                        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
-                    </div>
         </header>
     
         <div id="output-container" class="bordered-box">
@@ -299,13 +321,21 @@
                 </div>
                 <!-- Kolumn 2 -->
                 <div class="grid-item">
-                    <label>Färg:</label>
-                    <div class="theme-controls">
-                        <div class="color-buttons">
+                    <div class="size-controls">
+                         <label>Textstorlek:</label>
+                         <div class="font-size-control bordered-box">
+                             <button id="font-dec" class="btn">-</button>
+                             <div id="font-size-display" class="font-size-display">32</div>
+                             <button id="font-inc" class="btn">+</button>
+                         </div>
+                    </div>
+                    <div class="theme-controls" style="margin-top: 1.5rem;">
+                        <label>Färg:</label>
+                        <div class="control-row">
                             <button class="btn theme-btn bordered-box active" data-theme="dark">Svart</button>
                             <button class="btn theme-btn bordered-box" data-theme="light">Vitt</button>
                         </div>
-                        <div class="color-buttons">
+                        <div class="control-row">
                              <button class="btn text-color-btn bordered-box" data-color="#FFFF00">Gul</button>
                              <button class="btn text-color-btn bordered-box" data-color="#00FFFF">Cyan</button>
                              <button class="btn text-color-btn bordered-box active" data-color="#FFFFFF">Vit</button>
@@ -385,9 +415,12 @@
     const vocabularyTextarea = document.getElementById('vocabulary');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
     
-    // Theme & Color controls
+    // Theme, Color & Size controls
     const themeButtons = document.querySelectorAll('.theme-btn');
     const textColorButtons = document.querySelectorAll('.text-color-btn');
+    const fontIncBtn = document.getElementById('font-inc');
+    const fontDecBtn = document.getElementById('font-dec');
+    const fontSizeDisplay = document.getElementById('font-size-display');
     
     // Modal controls
     const qrModal = document.getElementById('qrModal');
@@ -402,6 +435,7 @@
     let transcriptStartTime = null;
     let customVocabulary = [];
     let currentTextColor = '#FFFFFF';
+    let currentFontSize = 32;
     
     if (!SpeechRecognition) {
         alert("Web Speech API stöds inte av denna webbläsare. Prova Google Chrome.");
@@ -486,6 +520,11 @@
         transcriptSegments = [];
         transcriptStartTime = null;
     }
+
+    function updateTextSize() {
+        fontSizeDisplay.textContent = currentFontSize;
+        outputContainer.style.fontSize = `${currentFontSize}px`;
+    }
     
     // --- Event Listeners ---
     startButton.addEventListener('click', () => {
@@ -524,6 +563,15 @@
     });
     
     clearButton.addEventListener('click', resetTranscription);
+
+    fontIncBtn.addEventListener('click', () => {
+        currentFontSize = Math.min(120, currentFontSize + 2);
+        updateTextSize();
+    });
+    fontDecBtn.addEventListener('click', () => {
+        currentFontSize = Math.max(12, currentFontSize - 2);
+        updateTextSize();
+    });
 
     themeButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -606,8 +654,9 @@
         URL.revokeObjectURL(a.href);
     }
     
-    // Set initial text color
+    // Set initial text color & size
     outputContainer.style.setProperty('--output-color', currentTextColor);
+    updateTextSize();
     </script>
 </body>
 </html>
