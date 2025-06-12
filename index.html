@@ -322,6 +322,7 @@
                         <button id="teleprompterButton" class="btn bordered-box">Helskärm</button>
                         <button id="clearButton" class="btn bordered-box">Rensa</button>
                     </div>
+                </br>
                     <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
                     <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Namn X, ord Y"></textarea>
                 </div>
@@ -534,7 +535,7 @@
         if (!isManuallyStopped) {
             isManuallyStopped = true;
             if (recognition) recognition.stop();
-            startButton.textContent = 'Starta Livetextning';
+            startButton.textContent = 'Starta livetextning';
         } else {
             customVocabulary = vocabularyTextarea.value.split('\n').filter(word => word.trim() !== '');
             setupRecognition();
