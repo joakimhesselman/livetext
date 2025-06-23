@@ -246,7 +246,7 @@
             border: 1px solid var(--border-color-outer);
             margin-top: 1rem;
             font-weight: bold;
-         }
+       }
 
         /* --- TELEPROMPTER & FULLSCREEN STYLES --- */
         #output-container:fullscreen {
@@ -322,17 +322,16 @@
             <h1>LIVETEXT IRL</h1>
             <p class="description">Direkttextning i din webbläsare med hjälp av Web Speech API. Gratis tal-till-text för fysiska live-event och inspelningar. Texten sparas och kan delas (som .srt).</p>
         </header>
+              <div id="startknapp">
+        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
+        </div>
         <div id="output-container" class="bordered-box">
             <p>Tryck på "Starta livetextning" för att börja...</p>
-        </div>
-        <div id="startknapp">
-        <button id="startButton" class="btn bordered-box">Starta livetextning</button>
         </div>
         <button id="exitFullscreenBtn" class="btn bordered-box">Avsluta helskärm</button>
 
         <div class="controls-container bordered-box">
             <div class="controls-grid">
-                <!-- Kolumn 1 -->
                 <div class="grid-item">
                     <label for="language">Språk:</label>
                     <select id="language" class="bordered-box">
@@ -345,17 +344,16 @@
                         <button id="teleprompterButton" class="btn bordered-box">Helskärm</button>
                     </div>
                     </br>
-                       <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
+                      <label for="vocabulary">Vanliga ord/namn (ett per rad):</label>
                     <textarea id="vocabulary" class="bordered-box" placeholder="t.ex. Namn X, ord Y"></textarea>
                 </div>
-                <!-- Kolumn 2 -->
                 <div class="grid-item">
                     <div class="size-controls">
                          <label>Textstorlek:</label>
                          <div class="font-size-control bordered-box">
-                             <button id="font-dec" class="btn">-</button>
-                             <div id="font-size-display" class="font-size-display">32</div>
-                             <button id="font-inc" class="btn">+</button>
+                              <button id="font-dec" class="btn">-</button>
+                              <div id="font-size-display" class="font-size-display">32</div>
+                              <button id="font-inc" class="btn">+</button>
                          </div>
                     </div>
                     <div class="theme-controls" style="margin-top: 1.5rem;">
@@ -371,7 +369,7 @@
                         </div>
                     </div>
                 </div>
-               
+                
             </div>
             <div class="bottom-buttons">
                 <button id="saveButton" class="btn bordered-box">Ladda ned texten (.srt)</button>
@@ -383,38 +381,38 @@
         <details id="kontakt-section" class="bordered-box">
             <summary>Kontakt och info</summary>
             <div class="kontakt-content">
-                  <h3>🎙 LIVETEXT IRL</h3>
+                 <h3>🎙 LIVETEXT IRL</h3>
                 <p>
                     <strong>Varning:</strong> Transkriberingen är AI-genererad och kan innehålla fel. Varken utvecklare eller Samhall tar ansvar för eventuella felaktigheter i den genererade texten.
-            </p>
-             <hr>
-             <h4>💡 Vad appen gör:</h4>
-             <ul>
-                  <li>Live-transkribering i realtid – när någon talar, visas texten direkt på skärmen.</li>
-                  <li>Ingen installation krävs – körs direkt i Chrome (fungerar även i Edge, Safari och på iPhone).</li>
-                  <li>Allt sker lokalt – ingen server används, inget ljud skickas iväg.</li>
-             </ul>
-            <div style="padding:100% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1092778394?h=50ab8a7253&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Promo Livetext IRL"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
-             <h4>🔧 Funktioner:</h4>
-             <ul>
-                  <li>Taligenkänning via Web Speech API – omvandlar tal till text automatiskt.</li>
-                  <li>Stöd för flera språk – välj igenkänningsspråk som passar ditt event.</li>
-                  <li>Anpassningsbar textvisning – ändra textstorlek och färg efter behov.</li>
-                  <li>Lägg till egna ord och namn – förbättra igenkänningen med t.ex. talarnamn eller facktermer.</li>
-                  <li>Helskärmsläge med teleprompterkänsla – för tydlig visning vid livevisning eller scen.</li>
-                  <li>Spara som undertextfil (.srt) – ladda ner transkriptionen med tidskoder för användning i videoredigering.</li>
-                  <li>Dela enkelt med andra – generera en länk eller QR-kod för snabb åtkomst.</li>
-             </ul>
-             <h4>🛠 Hur det fungerar:</h4>
-             <ul>
-                  <li>Appen startas med ett klick – ingen inloggning eller registrering behövs.</li>
-                  <li>Mikrofonen används för att lyssna på talet.</li>
-                  <li>Texten visas direkt i ett tydligt fönster och sparas i bakgrunden.</li>
-                  <li>När du är klar kan du ladda ner allt som en färdig undertextfil (.srt).</li>
-             </ul>
-             <hr>
+                </p>
+               <hr>
+               <h4>💡 Vad appen gör:</h4>
+               <ul>
+                    <li>Live-transkribering i realtid – när någon talar, visas texten direkt på skärmen.</li>
+                    <li>Ingen installation krävs – körs direkt i Chrome (fungerar även i Edge, Safari och på iPhone).</li>
+                    <li>Allt sker lokalt – ingen server används, inget ljud skickas iväg.</li>
+               </ul>
+            <div style="padding:56.25% 0 0 0;position:relative;"><iframe src="https://player.vimeo.com/video/1092778394?h=50ab8a7253&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Promo Livetext IRL"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script>
+               <h4>🔧 Funktioner:</h4>
+               <ul>
+                    <li>Taligenkänning via Web Speech API – omvandlar tal till text automatiskt.</li>
+                    <li>Stöd för flera språk – välj igenkänningsspråk som passar ditt event.</li>
+                    <li>Anpassningsbar textvisning – ändra textstorlek och färg efter behov.</li>
+                    <li>Lägg till egna ord och namn – förbättra igenkänningen med t.ex. talarnamn eller facktermer.</li>
+                    <li>Helskärmsläge med teleprompterkänsla – för tydlig visning vid livevisning eller scen.</li>
+                    <li>Spara som undertextfil (.srt) – ladda ner transkriptionen med tidskoder för användning i videoredigering.</li>
+                    <li>Dela enkelt med andra – generera en länk eller QR-kod för snabb åtkomst.</li>
+               </ul>
+               <h4>🛠 Hur det fungerar:</h4>
+               <ul>
+                    <li>Appen startas med ett klick – ingen inloggning eller registrering behövs.</li>
+                    <li>Mikrofonen används för att lyssna på talet.</li>
+                    <li>Texten visas direkt i ett tydligt fönster och sparas i bakgrunden.</li>
+                    <li>När du är klar kan du ladda ner allt som en färdig undertextfil (.srt).</li>
+               </ul>
+               <hr>
             <h4>☎️ Kontakt:</h4>
-             <p>LIVETEXT IRL skapades av Joakim Hesselman våren 2025 i samband med Samhalls årsstämma.</p>
+            <p>LIVETEXT IRL skapades av Joakim Hesselman våren 2025 i samband med Samhalls årsstämma.</p>
                 <p>
                     <strong>E-post:</strong><br>
                     joakim.hesselman@samhall.se
@@ -487,7 +485,9 @@
         recognition.onstart = () => {
             isManuallyStopped = false;
             startButton.textContent = 'Stoppa Livetextning';
-            if (outputContainer.textContent.includes('Tryck på "Starta livetextning" för att börja texta...')) {
+            // UPDATE 1: Clear the initial placeholder text when starting.
+            const placeholder = outputContainer.querySelector('p');
+            if (placeholder && placeholder.textContent.includes('Tryck på "Starta livetextning" för att börja')) {
                 outputContainer.innerHTML = '';
             }
         };
@@ -495,16 +495,19 @@
         recognition.onend = () => {
             if (!isManuallyStopped) {
                 console.log('Recognition session ended, restarting automatically.');
-                recognition.start();
+                // A brief delay before restarting can help prevent rapid-fire errors
+                setTimeout(() => recognition.start(), 250);
             }
         };
         
         recognition.onerror = (event) => console.error("Speech Recognition Error:", event.error);
 
+        // UPDATE 2 & 3: Reworked text flow logic
         recognition.onresult = (event) => {
             let interimTranscript = '';
             let finalTranscript = '';
             
+            // Find and remove the previous interim paragraph
             const existingInterim = outputContainer.querySelector('.interim');
             if(existingInterim) existingInterim.remove();
 
@@ -514,11 +517,19 @@
                 else interimTranscript += transcriptPart;
             }
 
+            const isFullscreen = document.fullscreenElement === outputContainer;
+
             if (finalTranscript) {
                 const finalP = document.createElement('p');
-                finalP.textContent = applyVocabulary(finalTranscript);
-                outputContainer.appendChild(finalP);
-                 const segmentTime = new Date();
+                finalP.textContent = applyVocabulary(finalTranscript.trim());
+                
+                if (isFullscreen) {
+                    outputContainer.appendChild(finalP); // Append for bottom-up teleprompter
+                } else {
+                    outputContainer.prepend(finalP); // Prepend for top-down normal view
+                }
+                
+                const segmentTime = new Date();
                 if (!transcriptStartTime) transcriptStartTime = segmentTime;
                 transcriptSegments.push({
                     text: applyVocabulary(finalTranscript.trim()),
@@ -528,15 +539,18 @@
                 transcriptStartTime = segmentTime;
             }
             if (interimTranscript) {
-                 const interimP = document.createElement('p');
-                 interimP.classList.add('interim');
-                 interimP.textContent = applyVocabulary(interimTranscript);
-                 outputContainer.appendChild(interimP);
+                const interimP = document.createElement('p');
+                interimP.classList.add('interim');
+                interimP.textContent = applyVocabulary(interimTranscript);
+
+                if (isFullscreen) {
+                    outputContainer.appendChild(interimP); // Append for bottom-up teleprompter
+                } else {
+                    outputContainer.prepend(interimP); // Prepend for top-down normal view
+                }
             }
             
-            if(document.fullscreenElement !== outputContainer) {
-                 outputContainer.scrollTop = outputContainer.scrollHeight;
-            }
+            // Removed automatic scrolling to let the new flexbox/prepend logic work.
         };
     }
     
@@ -544,14 +558,16 @@
         if (customVocabulary.length === 0 || !text) return text;
         let correctedText = text;
         customVocabulary.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'gi');
-            correctedText = correctedText.replace(regex, word);
+            // Create a case-insensitive regex for whole words
+            const regex = new RegExp(`\\b${word.trim()}\\b`, 'gi');
+            // We replace with the original cased word from the vocabulary list
+            correctedText = correctedText.replace(regex, word.trim());
         });
         return correctedText;
     }
     
     function resetTranscription() {
-        outputContainer.innerHTML = '<p>Tryck på "Starta livetextning" för att börja texta...</p>';
+        outputContainer.innerHTML = '<p>Tryck på "Starta livetextning" för att börja...</p>';
         transcriptSegments = [];
         transcriptStartTime = null;
     }
@@ -631,7 +647,9 @@
                     btn.dataset.color = lightThemeColors[index].color;
                     btn.textContent = lightThemeColors[index].name;
                 });
-                currentTextColor = lightThemeColors[0].color;
+                // Set default text color for light theme and activate button
+                const newColor = lightThemeColors[0].color;
+                outputContainer.style.setProperty('--output-color', newColor);
                 textColorButtons.forEach(btn => btn.classList.remove('active'));
                 textColorButtons[0].classList.add('active');
             } else { // dark theme
@@ -639,11 +657,12 @@
                     btn.dataset.color = darkThemeColors[index].color;
                     btn.textContent = darkThemeColors[index].name;
                 });
-                currentTextColor = darkThemeColors[2].color;
+                // Set default text color for dark theme and activate button
+                const newColor = darkThemeColors[2].color;
+                outputContainer.style.setProperty('--output-color', newColor);
                 textColorButtons.forEach(btn => btn.classList.remove('active'));
                 textColorButtons[2].classList.add('active');
             }
-            outputContainer.style.setProperty('--output-color', currentTextColor);
         });
     });
 
