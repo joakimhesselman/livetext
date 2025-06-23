@@ -104,6 +104,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            justify-content: flex-end; /* Justerar texten till botten */
             color: var(--output-color, var(--text-color));
         }
         
@@ -259,7 +260,6 @@
             height: 100%;
             font-size: 5vw;
             padding: 2vw 4vw;
-            justify-content: flex-end; /* Håller texten i botten */
             background-color: var(--bg-color);
             color: var(--output-color, var(--text-color));
         }
@@ -447,7 +447,7 @@
     const shareButton = document.getElementById('shareButton');
     const languageSelect = document.getElementById('language');
     const outputContainer = document.getElementById('output-container');
-    const transcriptContent = document.getElementById('transcript-content'); // Nytt, för en enda textmassa
+    const transcriptContent = document.getElementById('transcript-content');
     const vocabularyTextarea = document.getElementById('vocabulary');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
     
@@ -465,7 +465,7 @@
     // --- State ---
     let recognition;
     let isManuallyStopped = true;
-    let fullTranscript = ''; // Lagrar all slutgiltig text
+    let fullTranscript = '';
     let transcriptSegments = [];
     let transcriptStartTime = null;
     let customVocabulary = [];
@@ -493,11 +493,9 @@
             }
         };
 
-        // **FÖRBÄTTRAD OMSTARTLOGIK**
         recognition.onend = () => {
             if (!isManuallyStopped) {
                 console.log('Taligenkänning stoppad, startar om automatiskt...');
-                // Omedelbar omstart för att minimera avbrott
                 recognition.start();
             } else {
                  console.log('Taligenkänning stoppad manuellt.');
@@ -506,14 +504,13 @@
         
         recognition.onerror = (event) => {
             console.error("Speech Recognition Error:", event.error);
-            // Vissa fel (t.ex. 'no-speech') stoppar igenkänningen, onend kommer att hantera omstarten.
             if (event.error === 'not-allowed') {
-                 isManuallyStopped = true; // Stoppa omstart om vi inte har tillåtelse
+                 isManuallyStopped = true;
                  alert("Kunde inte komma åt mikrofonen. Vänligen ge tillåtelse och försök igen.");
             }
         };
 
-        // **NY LOGIK FÖR KONTINUERLIGT TEXTFLÖDE**
+        // **ENHETLIG LOGIK FÖR TEXTFLÖDE**
         recognition.onresult = (event) => {
             let interimTranscript = '';
             let finalTranscriptChunk = '';
@@ -527,15 +524,10 @@
                 }
             }
 
-            const isFullscreen = document.fullscreenElement === outputContainer;
-
             if (finalTranscriptChunk) {
                 let correctedChunk = applyVocabulary(finalTranscriptChunk);
-                if (isFullscreen) {
-                    fullTranscript += correctedChunk;
-                } else {
-                    fullTranscript = correctedChunk + fullTranscript;
-                }
+                // Lägg alltid till ny text i slutet av den totala textmassan
+                fullTranscript += correctedChunk;
                 
                 // Spara för .srt-export
                 const segmentTime = new Date();
@@ -548,14 +540,11 @@
                 transcriptStartTime = segmentTime;
             }
             
-            // Uppdatera DOM
-            if (isFullscreen) {
-                transcriptContent.textContent = fullTranscript + interimTranscript;
-                // Skrolla automatiskt till botten i teleprompter-läge
-                outputContainer.scrollTop = outputContainer.scrollHeight;
-            } else {
-                transcriptContent.textContent = interimTranscript + fullTranscript;
-            }
+            // Uppdatera DOM - samma logik för båda vyer
+            transcriptContent.textContent = fullTranscript + interimTranscript;
+            
+            // Skrolla alltid till botten för att visa den senaste texten
+            outputContainer.scrollTop = outputContainer.scrollHeight;
         };
     }
     
@@ -611,8 +600,7 @@
     });
     
     document.addEventListener('fullscreenchange', () => {
-        // Behåller nu klassen .teleprompter-mode för att styra textflöde etc.
-        // Detta är inte längre nödvändigt med den nya textflödeslogiken.
+        // Ingen specifik logik behövs här längre
     });
     
     clearButton.addEventListener('click', resetTranscription);
