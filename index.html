@@ -106,6 +106,12 @@
             flex-direction: column;
             color: var(--output-color, var(--text-color));
         }
+        
+        #transcript-content {
+            white-space: pre-wrap; /* Behåller radbrytningar och låter texten flöda om */
+            width: 100%;
+            margin: 0;
+        }
 
         .controls-container {
             padding: 1.5rem;
@@ -253,15 +259,10 @@
             height: 100%;
             font-size: 5vw;
             padding: 2vw 4vw;
-            justify-content: flex-end;
+            justify-content: flex-end; /* Håller texten i botten */
             background-color: var(--bg-color);
             color: var(--output-color, var(--text-color));
         }
-        #output-container.teleprompter-mode {
-             flex-direction: column-reverse;
-             overflow: hidden;
-        }
-        #output-container .interim { opacity: 1; }
         
         #exitFullscreenBtn {
             position: fixed;
@@ -274,7 +275,6 @@
         #output-container:fullscreen + #exitFullscreenBtn {
             display: block;
         }
-
 
         /* --- MODAL STYLES (for QR) --- */
         .modal-overlay {
@@ -326,7 +326,7 @@
         <button id="startButton" class="btn bordered-box">Starta livetextning</button>
         </div>
         <div id="output-container" class="bordered-box">
-            <p>Tryck på "Starta livetextning" för att börja...</p>
+            <p id="transcript-content">Tryck på "Starta livetextning" för att börja...</p>
         </div>
         <button id="exitFullscreenBtn" class="btn bordered-box">Avsluta helskärm</button>
 
@@ -447,6 +447,7 @@
     const shareButton = document.getElementById('shareButton');
     const languageSelect = document.getElementById('language');
     const outputContainer = document.getElementById('output-container');
+    const transcriptContent = document.getElementById('transcript-content'); // Nytt, för en enda textmassa
     const vocabularyTextarea = document.getElementById('vocabulary');
     const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
     
@@ -461,9 +462,10 @@
     const qrModal = document.getElementById('qrModal');
     const closeQRModalBtn = document.getElementById('closeQRModal');
     
-    // State
+    // --- State ---
     let recognition;
     let isManuallyStopped = true;
+    let fullTranscript = ''; // Lagrar all slutgiltig text
     let transcriptSegments = [];
     let transcriptStartTime = null;
     let customVocabulary = [];
@@ -485,72 +487,75 @@
         recognition.onstart = () => {
             isManuallyStopped = false;
             startButton.textContent = 'Stoppa Livetextning';
-            // UPDATE 1: Clear the initial placeholder text when starting.
-            const placeholder = outputContainer.querySelector('p');
-            if (placeholder && placeholder.textContent.includes('Tryck på "Starta livetextning" för att börja')) {
-                outputContainer.innerHTML = '';
+            if (transcriptContent.textContent.includes('Tryck på "Starta livetextning" för att börja')) {
+                transcriptContent.textContent = '';
+                fullTranscript = '';
             }
         };
 
+        // **FÖRBÄTTRAD OMSTARTLOGIK**
         recognition.onend = () => {
             if (!isManuallyStopped) {
-                console.log('Recognition session ended, restarting automatically.');
-                // A brief delay before restarting can help prevent rapid-fire errors
-                setTimeout(() => recognition.start(), 250);
+                console.log('Taligenkänning stoppad, startar om automatiskt...');
+                // Omedelbar omstart för att minimera avbrott
+                recognition.start();
+            } else {
+                 console.log('Taligenkänning stoppad manuellt.');
             }
         };
         
-        recognition.onerror = (event) => console.error("Speech Recognition Error:", event.error);
+        recognition.onerror = (event) => {
+            console.error("Speech Recognition Error:", event.error);
+            // Vissa fel (t.ex. 'no-speech') stoppar igenkänningen, onend kommer att hantera omstarten.
+            if (event.error === 'not-allowed') {
+                 isManuallyStopped = true; // Stoppa omstart om vi inte har tillåtelse
+                 alert("Kunde inte komma åt mikrofonen. Vänligen ge tillåtelse och försök igen.");
+            }
+        };
 
-        // UPDATE 2 & 3: Reworked text flow logic
+        // **NY LOGIK FÖR KONTINUERLIGT TEXTFLÖDE**
         recognition.onresult = (event) => {
             let interimTranscript = '';
-            let finalTranscript = '';
+            let finalTranscriptChunk = '';
             
-            // Find and remove the previous interim paragraph
-            const existingInterim = outputContainer.querySelector('.interim');
-            if(existingInterim) existingInterim.remove();
-
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                 const transcriptPart = event.results[i][0].transcript;
-                if (event.results[i].isFinal) finalTranscript += transcriptPart + ' ';
-                else interimTranscript += transcriptPart;
+                if (event.results[i].isFinal) {
+                    finalTranscriptChunk += transcriptPart + ' ';
+                } else {
+                    interimTranscript += transcriptPart;
+                }
             }
 
             const isFullscreen = document.fullscreenElement === outputContainer;
 
-            if (finalTranscript) {
-                const finalP = document.createElement('p');
-                finalP.textContent = applyVocabulary(finalTranscript.trim());
-                
+            if (finalTranscriptChunk) {
+                let correctedChunk = applyVocabulary(finalTranscriptChunk);
                 if (isFullscreen) {
-                    outputContainer.appendChild(finalP); // Append for bottom-up teleprompter
+                    fullTranscript += correctedChunk;
                 } else {
-                    outputContainer.prepend(finalP); // Prepend for top-down normal view
+                    fullTranscript = correctedChunk + fullTranscript;
                 }
                 
+                // Spara för .srt-export
                 const segmentTime = new Date();
                 if (!transcriptStartTime) transcriptStartTime = segmentTime;
                 transcriptSegments.push({
-                    text: applyVocabulary(finalTranscript.trim()),
+                    text: correctedChunk.trim(),
                     startTime: transcriptStartTime,
                     endTime: segmentTime
                 });
                 transcriptStartTime = segmentTime;
             }
-            if (interimTranscript) {
-                const interimP = document.createElement('p');
-                interimP.classList.add('interim');
-                interimP.textContent = applyVocabulary(interimTranscript);
-
-                if (isFullscreen) {
-                    outputContainer.appendChild(interimP); // Append for bottom-up teleprompter
-                } else {
-                    outputContainer.prepend(interimP); // Prepend for top-down normal view
-                }
-            }
             
-            // Removed automatic scrolling to let the new flexbox/prepend logic work.
+            // Uppdatera DOM
+            if (isFullscreen) {
+                transcriptContent.textContent = fullTranscript + interimTranscript;
+                // Skrolla automatiskt till botten i teleprompter-läge
+                outputContainer.scrollTop = outputContainer.scrollHeight;
+            } else {
+                transcriptContent.textContent = interimTranscript + fullTranscript;
+            }
         };
     }
     
@@ -558,16 +563,15 @@
         if (customVocabulary.length === 0 || !text) return text;
         let correctedText = text;
         customVocabulary.forEach(word => {
-            // Create a case-insensitive regex for whole words
             const regex = new RegExp(`\\b${word.trim()}\\b`, 'gi');
-            // We replace with the original cased word from the vocabulary list
             correctedText = correctedText.replace(regex, word.trim());
         });
         return correctedText;
     }
     
     function resetTranscription() {
-        outputContainer.innerHTML = '<p>Tryck på "Starta livetextning" för att börja...</p>';
+        fullTranscript = '';
+        transcriptContent.textContent = 'Tryck på "Starta livetextning" för att börja...';
         transcriptSegments = [];
         transcriptStartTime = null;
     }
@@ -592,7 +596,6 @@
 
     teleprompterButton.addEventListener('click', () => {
         if (!document.fullscreenElement) {
-            outputContainer.classList.add('teleprompter-mode');
             outputContainer.requestFullscreen().catch(err => {
                 alert(`Kunde inte starta helskärm: ${err.message}`);
             });
@@ -608,9 +611,8 @@
     });
     
     document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            outputContainer.classList.remove('teleprompter-mode');
-        }
+        // Behåller nu klassen .teleprompter-mode för att styra textflöde etc.
+        // Detta är inte längre nödvändigt med den nya textflödeslogiken.
     });
     
     clearButton.addEventListener('click', resetTranscription);
@@ -647,17 +649,15 @@
                     btn.dataset.color = lightThemeColors[index].color;
                     btn.textContent = lightThemeColors[index].name;
                 });
-                // Set default text color for light theme and activate button
                 const newColor = lightThemeColors[0].color;
                 outputContainer.style.setProperty('--output-color', newColor);
                 textColorButtons.forEach(btn => btn.classList.remove('active'));
                 textColorButtons[0].classList.add('active');
-            } else { // dark theme
+            } else { 
                 textColorButtons.forEach((btn, index) => {
                     btn.dataset.color = darkThemeColors[index].color;
                     btn.textContent = darkThemeColors[index].name;
                 });
-                // Set default text color for dark theme and activate button
                 const newColor = darkThemeColors[2].color;
                 outputContainer.style.setProperty('--output-color', newColor);
                 textColorButtons.forEach(btn => btn.classList.remove('active'));
